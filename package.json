@@ -1,0 +1,69 @@
+{
+    "name": "@persevie/statemanjs",
+    "version": "1.0.0",
+    "description": "Proper state manager for JavaScript",
+    "main": "statemanjs.js",
+    "module": "statemanjs.mjs",
+    "typings": "statemanjs.d.ts",
+    "license": "MIT",
+    "repository": "https://github.com/persevie/statemanjs",
+    "bugs": "https://github.com/persevie/statemanjs/issues",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "README.md",
+        "LICENSE",
+        "statemanjs.js",
+        "statemanjs.mjs",
+        "statemanjs.d.ts",
+        "statemanjs.js.map",
+        "statemanjs.mjs.map"
+    ],
+    "keywords": [
+        "javascript",
+        "state management",
+        "state manager",
+        "state",
+        "store"
+    ],
+    "author": "Dmitry Shatokhin <dmtrshatokhin@gmail.com> (https://github.com/dmtrshat)",
+    "scripts": {
+        "test": "jest --config=jest.config.ts",
+        "build": "rollup -c && node ./scripts/createDistPackageJson.js",
+        "lint": "eslint './src/**/*.ts' --fix",
+        "prepare": "husky install"
+    },
+    "lint-staged": {
+        "**/*.ts": [
+            "prettier --write",
+            "eslint --fix"
+        ]
+    },
+    "devDependencies": {
+        "@types/jest": "^28.1.1",
+        "@types/node": "^18.11.9",
+        "@typescript-eslint/eslint-plugin": "^5.36.2",
+        "@typescript-eslint/parser": "^5.36.2",
+        "esbuild": "^0.14.43",
+        "eslint": "^8.23.0",
+        "eslint-config-prettier": "^8.5.0",
+        "eslint-plugin-import": "^2.26.0",
+        "eslint-plugin-prettier": "^4.2.1",
+        "husky": "^8.0.2",
+        "jest": "^28.1.1",
+        "jest-environment-jsdom": "^28.1.1",
+        "lint-staged": "^13.0.3",
+        "prettier": "^2.7.1",
+        "prettier-eslint": "^15.0.1",
+        "rollup": "^2.75.6",
+        "rollup-plugin-bundle-size": "^1.0.3",
+        "rollup-plugin-copy": "^3.4.0",
+        "rollup-plugin-dts": "^4.2.2",
+        "rollup-plugin-esbuild": "^4.9.1",
+        "rollup-plugin-terser": "^7.0.2",
+        "ts-jest": "^28.0.4",
+        "ts-node": "^10.8.1",
+        "typescript": "^4.7.3"
+    }
+}
