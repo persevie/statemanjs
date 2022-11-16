@@ -421,7 +421,7 @@ Don't forget that the benchmark was run in the NodeJS environment, everything wi
 
 # **Integrations**
 
-Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](https://github.com/persevie/statemanjs-react/README.md), [vue](https://github.com/persevie/statemanjs-vue/README.md), [solid](https://github.com/persevie/statemanjs-solid/README.md). Statemanjs supports svelte out of the box and doesn't need any additional packages.
+Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](https://github.com/persevie/statemanjs-react), [vue](https://github.com/persevie/statemanjs-vue), [solid](https://github.com/persevie/statemanjs-solid). Statemanjs supports svelte out of the box and doesn't need any additional packages.
 To work with additional packages, the main statemanjs package is required.
 
 # **For contributors**
