@@ -1,0 +1,28 @@
+{
+    "ts-node": {
+        "compilerOptions": {
+            "module": "commonjs"
+        }
+    },
+    "compilerOptions": {
+        "jsx": "react",
+        "downlevelIteration": true,
+        "lib": ["dom", "dom.iterable", "esnext"],
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "isolatedModules": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "target": "es6",
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "allowJs": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "noImplicitThis": false
+    },
+    "include": ["src/**/*", "rollup.config.js"],
+    "exclude": ["node_modules"]
+}
