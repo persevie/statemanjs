@@ -44,12 +44,12 @@ function App(): JSX.Element {
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [**Installing**](#installing)
+- [**Installation**](#installation)
 - [**For contributors**](#for-contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# **Installing**
+# **Installation**
 
 This integration for React requires you to install **statemanjs**.
 
