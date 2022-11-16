@@ -1,6 +1,6 @@
 {
     "name": "@persevie/statemanjs-react",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "React wrap over proper state manager for JavaScript",
     "main": "statemanjs-react.js",
     "module": "statemanjs-react.mjs",
