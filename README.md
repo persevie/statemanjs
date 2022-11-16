@@ -2,7 +2,6 @@
 <img height="60" alt="Statemanjs logo" src="./assets/stateman-js-logo-full.png">
 </p>
 
-
 ```ts
 import { createState } from "@persevie/statemanjs";
 
@@ -57,7 +56,7 @@ transferState.subscribe(
     -   [**Clear API**](#clear-api)
     -   [**Everything can be a state**](#everything-can-be-a-state)
 -   [**Usage**](#usage)
-    -   [**Installing and creating state**](#installing-and-creating-state)
+    -   [**Installation and initialization the state**](#installation-and-initialization-the-state)
     -   [**Subscribe to changes**](#subscribe-to-changes)
     -   [**State change**](#state-change)
 -   [**Benchmark**](#benchmark)
@@ -162,7 +161,7 @@ const soComplexObject = createState({
 
 # **Usage**
 
-## **Installing and creating state**
+## **Installation and initialization the state**
 
 ```bash
 npm i @persevie/statemanjs
