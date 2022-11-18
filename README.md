@@ -302,15 +302,12 @@ userState.update((state) => {
 # **Benchmark**
 
 The benchmark was run on a MacBook Pro, m1, 16gb.
-You can run [it](https://github.com/persevie/statemanjs-benchmarks) on your device.
 
 Below is a comparison table with other popular state managers.
 This table is the result of the benchmark, which adds elements to the array (state), in the amount of 100, 500, 1000, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000, 2560000.
 Each case was run 10 times (for all state managers) and the average value was recorded in a table.
 
 \*❌ - means error during benchmark.
-
-\*\*Results in seconds
 
 <table>
 <thead>
