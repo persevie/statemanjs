@@ -52,15 +52,17 @@ transferState.subscribe(
 
 -   [**Review**](#review)
     -   [**Performance**](#performance)
-    -   [**Reliability**](#reliability)
+    -   [**Security and reliability**](#security-and-reliability)
     -   [**Clear API**](#clear-api)
     -   [**Everything can be a state**](#everything-can-be-a-state)
 -   [**Usage**](#usage)
     -   [**Installation and initialization the state**](#installation-and-initialization-the-state)
     -   [**Subscribe to changes**](#subscribe-to-changes)
     -   [**State change**](#state-change)
--   [**Benchmark**](#benchmark)
+-   [**Benchmarks**](#benchmarks)
+    -   [Fill case.](#fill-case)
 -   [**Integrations**](#integrations)
+-   [**Statemanjs is:**](#statemanjs-is)
 -   [**For contributors**](#for-contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -73,7 +75,7 @@ Statemanjs has the highest performance and reliability, and adheres to a clear a
 Here are the basic principles of statemanjs:
 
 -   Performance
--   Reliability
+-   Security and reliability
 -   Clear API
 -   Everything can be a state
 
@@ -85,9 +87,15 @@ Statemanjs was developed for JavaScript with all the features of this language i
 Most state managers for JS take an immutable approach. This means that when the state changes, a copy of it is always created. It can be imagined like this - a new value of the object has come → the state is cloned → the state is updated → the updated state is returned. Now it does not look so scary, but let's add single-threading to this. Your application is forced to wait for the state update to complete before doing something else. It would be more logical to follow this approach - a new value of the object has come → the state is updated → the updated state is returned. The number of stages has been reduced, and therefore productivity has increased. “But you only threw out cloning, does it affect performance so much?” - Yes. In JavaScript, immutability is a very expensive operation. This means that the cloning step will take time, which can be spent, for example, updating the UI or performing another task. Add to this a huge amount of logic in your application, and the performance difference becomes more and more significant.
 Statemanjs - takes a data mutability approach.
 
-## **Reliability**
+Imagine the situation - you send 100 big files to the server and the UI should show the progress, speed, ETA, file name and path for each of the files. In addition to changing the sending information - other information that is not displayed in the UI, in the file structure - the number of bytes sent, how many bytes left, etc. is also changed. The user has to interact with the application. The immutable approach will not work. The application will freeze with every status update, and if you take into account that every file is sent in parallel, the application can freeze completely. Statemanjs can easily do it.
 
-The immutable approach ensures that your state is not accidentally changed, which is not the case with the mutable approach. For example, the state of Mobx can be changed anywhere and any way. You can bind the current state to a variable, and when the variable changes, the state will also change. Agree, it does not look very reliable. Statemanjs is arranged differently here as well. You can only change/create state through built-in methods. It is this API that guarantees the reliability of your state.
+## **Security and reliability**
+
+The immutable approach ensures that your state is not accidentally changed, which is not the case with the mutable approach. For example, the state of Mobx can be changed anywhere and any way. You can bind the current state to a variable, and when the variable changes, the state will also change. Agree, it does not look very reliable.
+
+Statemanjs is arranged differently here as well. You can only change/create state through built-in methods. **It's as if you put a state in a box and can only get a link to that state with a read-only restriction**.
+
+It is this API that guarantees the security and reliability of your state.
 
 ## **Clear API**
 
@@ -299,127 +307,136 @@ userState.update((state) => {
 });
 ```
 
-# **Benchmark**
+# **Benchmarks**
 
-The benchmark was run on a MacBook Pro, m1, 16gb.
+> The examples of storage implementations (code) for each state-manager (except statemanjs) were taken from the official documentation of these libraries.
 
-Below is a comparison table with other popular state managers.
-This table is the result of the benchmark, which adds elements to the array (state), in the amount of 100, 500, 1000, 5000, 10000, 20000, 40000, 80000, 160000, 320000, 640000, 1280000, 2560000.
-Each case was run 10 times (for all state managers) and the average value was recorded in a table.
+### Fill case.
 
-\*❌ - means error during benchmark.
+One by one adds `n` elements to the array `x` times. Where `n` is a number from the array of numbers [1, 10, 100, 1000, 10000, 100000, 1000000, 2000000, 5000000, 10000000,
+50000000] ([countOfElements](https://github.com/dmtrshat/statemanjs-benchmarks/blob/main/cases/shared.mjs)), and `x` is the number of iterations (1 by default). If `n = 5; x = 2`, that means to add `5` elements `2` times. The `element` is an object `{foo: "bar", baz: "qux"}`. Between iterations the storage is reset (empty array).
+The average value for iterations is calculated and written as the result.
+
+Think of this case as a TODO list with a simple structure, e.g. `{title: string, notes: string}`.
+
+The benchmark was run on a MacBook Pro m1 16gb.
+
+You can run the benchmarks on your computer. You can also add new benchmarks or modify existing ones.
+Read more about it [here](https://github.com/dmtrshat/statemanjs-benchmarks/blob/main/README.md).
+
+Below is a table with the results of the **fill** benchmark.
+
+> time in `ms`
+
+> ❌ - means an error during execution or too long execution time (>6h).
 
 <table>
 <thead>
   <tr>
-    <th>Name</th>
-    <th>100</th>
-    <th>500</th>
-    <th>1000</th>
-    <th>5000</th>
-    <th>10000</th>
-    <th>20000</th>
-    <th>40000</th>
-    <th>80000</th>
-    <th>160000</th>
-    <th>320000</th>
-    <th>640000</th>
-    <th>1280000</th>
-    <th>2560000</th>
+    <th style="background-color: dimgray;">Items</th>
+    <th style="background-color: dimgray;">effector</th>
+    <th style="background-color: dimgray;">mobx</th>
+    <th style="background-color: dimgray;">redux</th>
+    <th style="background-color: dimgray;">statemanjs</th>
   </tr>
 </thead>
 <tbody>
-  <tr>
-    <td>statemanjs</td>
-    <td>0.1256750002503395</td>
-    <td>0.41603749953210356</td>
-    <td>0.6447918005287647</td>
-    <td>1.5476418003439902</td>
-    <td>2.6794791001826526</td>
-    <td>5.217970700562001</td>
-    <td>9.459733299911022</td>
-    <td>16.601908500120043</td>
-    <td>33.24702489995398</td>
-    <td>59.56564570013434</td>
-    <td>125.51550420001149</td>
-    <td>270.7810873998329</td>
-    <td>532.6712166998535</td>
-  </tr>
-  <tr>
-    <td>redux</td>
-    <td>0.12983310036361217</td>
-    <td>1.3561332002282143</td>
-    <td>4.40060419999063</td>
-    <td>266.9328539993614</td>
-    <td>1009.34137509875</td>
-    <td>4177.273962600157</td>
-    <td>19662.740120899678</td>
-    <td>105281.26535429992</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-  </tr>
-  <tr>
-    <td>mobx</td>
-    <td>0.7277332998812198</td>
-    <td>2.706258299946785</td>
-    <td>4.108445800095796</td>
-    <td>13.18133749999106</td>
-    <td>24.971716599538922</td>
-    <td>47.74443760029972</td>
-    <td>99.50159570015967</td>
-    <td>200.66793330013752</td>
-    <td>452.0446125999093</td>
-    <td>1100.9856083998457</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-  </tr>
-  <tr>
-    <td>xstate</td>
-    <td>1.5114331997931003</td>
-    <td>5.076700000837445</td>
-    <td>9.003429099917412</td>
-    <td>26.321991700306533</td>
-    <td>47.318245799839495</td>
-    <td>92.908674999699</td>
-    <td>184.9398877006024</td>
-    <td>353.5915873996913</td>
-    <td>739.1568584999535</td>
-    <td>1552.7339956998826</td>
-    <td>3419.594879200682</td>
-    <td>8327.197879200055</td>
-    <td>22651.708679099753</td>
-  </tr>
-  <tr>
-    <td>effector</td>
-    <td>0.45675409957766533</td>
-    <td>1.2237749002873897</td>
-    <td>1.6501832995563745</td>
-    <td>3.2516458999365567</td>
-    <td>4.759345900639891</td>
-    <td>8.276599999889731</td>
-    <td>13.910462499782444</td>
-    <td>23.23244180008769</td>
-    <td>46.63204999999143</td>
-    <td>81.9146542005241</td>
-    <td>174.61498729977757</td>
-    <td>378.94245009999725</td>
-    <td>745.4281083000824</td>
-  </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">1</td>
+        <td style="color:tomato">0.010970029979944229</td>
+        <td style="color:red">0.01990541983395815</td>
+        <td style="color:darkseagreen">0.0040803998708724976</td>
+        <td style="color:green; font-weight: bold">0.0020753702148795126</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">10</td>
+        <td style="color:tomato">0.04626586981117725</td>
+        <td style="color:red">0.11000874035060405</td>
+        <td style="color:darkseagreen">0.014035369530320167</td>
+        <td style="color:green; font-weight: bold">0.010449579730629922</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">100</td>
+        <td style="color:tomato">0.17841962995938956</td>
+        <td style="color:red">0.4354520997777581</td>
+        <td style="color:darkseagreen">0.08275457009673119</td>
+        <td style="color:green; font-weight: bold">0.06232665043324232</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">1000</td>
+        <td style="color:tomato">1.208628780017607</td>
+        <td style="color:red">2.586632479839027</td>
+        <td style="color:darkseagreen">0.8747471100464463</td>
+        <td style="color:green; font-weight: bold">0.2421091901510954</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">10000</td>
+        <td style="color:red">58.332799129989</td>
+        <td style="color:darkseagreen">31.700192469991745</td>
+        <td style="color:tomato">52.266411220021546</td>
+        <td style="color:green; font-weight: bold">2.2227349602803588</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">100000</td>
+        <td style="color:red">13849.532463340052</td>
+        <td style="color:darkseagreen">322.1863979200646</td>
+        <td style="color:tomato">12867.839250005782</td>
+        <td style="color:green; font-weight: bold">27.505533350259064</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">1000000</td>
+        <td style="color:red">2448118.7541659996</td>
+        <td style="color:darkseagreen">4473.258667119965</td>
+        <td style="color:tomato">2354867.223542001</td>
+        <td style="color:green; font-weight: bold">279.83934087000785</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">2000000</td>
+        <td>❌</td>
+        <td style="color:red">9588.994868720061</td>
+        <td>❌</td>
+        <td style="color:green; font-weight: bold">605.3742875201627</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">5000000</td>
+        <td>❌</td>
+        <td>❌</td>
+        <td>❌</td>
+        <td style="color:green; font-weight: bold">1468.102162090242</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">10000000</td>
+        <td>❌</td>
+        <td>❌</td>
+        <td>❌</td>
+        <td style="color:green; font-weight: bold">3185.2785096402094</td>
+    </tr>
+    <tr>
+        <td style="background-color: dimgray; font-weight: bold">50000000</td>
+        <td>❌</td>
+        <td>❌</td>
+        <td>❌</td>
+        <td style="color:green; font-weight: bold">14499.883542001247</td>
+    </tr>
 </tbody>
 </table>
 
-As you can see from the table, statemanjs shows the best results. Pay close attention to the performance difference between statemanjs and mobx. Both state managers rely on state mutability, but the difference in the implementation of this approach sets them apart. In other words, variability is their only similarity.
-When looking at this table, keep in mind that the performance of most state managers will be slower on real projects. For example, Redux currently has only one body, in reality there will be more reducers. On the other hand, Statemanjs scales well in both depth (state size) and width (number of states).
-Don't forget that the benchmark was run in the NodeJS environment, everything will be slower in the browser. Also, user devices can be different, which also affects performance.
+Statemanjs showed the best results in all tests. Some will argue that this case is biased, because adding an element to an array entails cloning in immutable state managers. But look at the test with adding a single element to an empty array - even in this case statemanjs is faster than the opponents. All state operations on this statemanager are faster. Redux performed quite well compared to effector and mobx, but it's worth noting that it's a very simple repository with few redirectors. In real projects its speed will be much slower. Mobx has shown that it is scalable, although the performance at the beginning leaves a lot to be desired. Effector is the outsider in this comparison, but in real projects its performance will be better than redux. Originally, the plan was to test zustand and xstate instead of effector, but the test results were unsatisfactory.
 
 # **Integrations**
 
 Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](https://github.com/persevie/statemanjs-react), [vue](https://github.com/persevie/statemanjs-vue), [solid](https://github.com/persevie/statemanjs-solid). Statemanjs supports svelte out of the box and doesn't need any additional packages.
 To work with additional packages, the main statemanjs package is required.
+
+# **Statemanjs is:**
+
+-   very fast
+-   secure
+-   scales perfectly
+-   has a concise API
+-   framework-independent
+-   is small in size
+-   has no dependencies
 
 # **For contributors**
 
