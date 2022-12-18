@@ -150,6 +150,9 @@ export interface StatemanjsBaseAPI<T extends object> {
 
     /** Remove all subscribers */
     unsubscribeAll(): void;
+
+    /** Checks if the element is an object */
+    isObject(entity: unknown): boolean;
 }
 
 /**
@@ -199,4 +202,10 @@ export interface StatemanjsAPI<T> {
      * @param updateCb Callback for state updates.
      */
     update(updateCb: UpdateCb<T>): void;
+
+    /**
+     * Unwrap a proxy object to a regular JavaScript object
+     * @returns unwrapped state
+     */
+    unwrap(): T;
 }

@@ -212,6 +212,19 @@ describe("Statemanjs API", () => {
 
         expect(moonObserverState.getActiveSubscribersCount()).toBe(0);
     });
+
+    test("it should unwrap state", () => {
+        const planetState = createState<Planet>({
+            name: "earth", // typo
+            system: "Solar system",
+            moons: [{ name: "Moon" }],
+        });
+
+        const unwrappedPlanet = planetState.unwrap();
+        unwrappedPlanet.name = "Earth"; // fix typo
+
+        expect(unwrappedPlanet.name).toBe("Earth");
+    });
 });
 
 describe("Statemanjs security", () => {

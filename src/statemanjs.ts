@@ -34,6 +34,7 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         this.getWasChanged = this.getWasChanged.bind(this);
         this.saveSlots = this.saveSlots.bind(this);
         this.checkAccessKind = this.checkAccessKind.bind(this);
+        this.isObject = this.isObject.bind(this);
     }
 
     /** All active subscribers. */
@@ -123,7 +124,7 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
                     this.handler(this),
                 );
             }
-        } else if (typeof target[prop] === "object" && target[prop] !== null) {
+        } else if (this.isObject(target[prop]) && target[prop] !== null) {
             return new Proxy(this.saveSlots(target, prop), this.handler(this));
         } else {
             return this.saveSlots(target, prop);
@@ -291,6 +292,11 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
     unsubscribeAll(): void {
         this.activeSubscriberIds = [];
     }
+
+    /** Checks if the element is an object */
+    isObject(entity: unknown): boolean {
+        return typeof entity === "object";
+    }
 }
 
 function _createStatemanjsBase<T extends object>(): StatemanjsBaseAPI<T> {
@@ -307,6 +313,7 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
         this.getActiveSubscribersCount =
             this.getActiveSubscribersCount.bind(this);
         this.update = this.update.bind(this);
+        this.unwrap = this.unwrap.bind(this);
 
         // Composition (using factory func for exclude StatePackBase interface from declaration) for access to common API.
         this.#baseApi = _createStatemanjsBase<StateWrapper<E>>();
@@ -427,6 +434,31 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
                 formatError("An error occurred while update the state", error),
             );
         }
+    }
+
+    /**
+     * Unwrap a proxy object to a regular JavaScript object
+     * @returns unwrapped state
+     */
+    unwrap(): E {
+        const _unwrap = (obj: any): Record<string, any> => {
+            if (!obj || !this.#baseApi.isObject(obj)) {
+                return obj;
+            }
+
+            if (Object.prototype.toString.call(obj) === "[object Proxy]") {
+                return _unwrap(obj.target);
+            }
+
+            const result: Record<string, any> = {};
+            for (const key in obj) {
+                result[key] = _unwrap(obj[key]);
+            }
+            return result;
+        };
+
+        return (_unwrap(this.#proxiedState) as StateWrapper<E>)
+            .__STATEMANJS_STATE__;
     }
 }
 
