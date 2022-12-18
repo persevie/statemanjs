@@ -153,6 +153,12 @@ getActiveSubscribersCount(): number;
  * @param updateCb Callback for state updates.
  */
 update(updateCb: UpdateCb<T>): void;
+
+/**
+ * Unwrap a proxy object to a regular JavaScript object
+ * @returns unwrapped state
+ */
+unwrap(): T;
 ```
 
 ## **Everything can be a state**
@@ -307,6 +313,28 @@ userState.update((state) => {
 });
 ```
 
+If you want unwrap state to javascript object - use `unwrap()` method:
+
+```ts
+import { createState } from "@persevie/statemanjs";
+
+type User = {
+    name: string;
+    age: number;
+    isOnline: boolean;
+    hobbyes: Array<string>;
+};
+
+const userState = createState<User>({
+    name: "Finn",
+    age: 13,
+    isOnline: false,
+    hobbyes: [],
+});
+
+const unwrappedUser = userState.unwrap();
+```
+
 # **Benchmarks**
 
 > The examples of storage implementations (code) for each state-manager (except statemanjs) were taken from the official documentation of these libraries.
@@ -420,7 +448,6 @@ Below is a table with the results of the **fill** benchmark.
     </tr>
 </tbody>
 </table>
-
 
 Statemanjs showed the best results in all tests. Some will argue that this case is biased, because adding an element to an array entails cloning in immutable state managers. But look at the test with adding a single element to an empty array - even in this case statemanjs is faster than the opponents. All state operations on this statemanager are faster. Redux performed quite well compared to effector and mobx, but it's worth noting that it's a very simple storage with few reducers. In real projects its speed will be much slower. Mobx has shown that it is scalable, although the performance at the beginning leaves a lot to be desired. Effector is the outsider in this comparison, but in real projects its performance will be better than redux. Originally, the plan was to test zustand and xstate instead of effector, but the test results were unsatisfactory.
 
