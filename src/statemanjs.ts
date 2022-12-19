@@ -35,6 +35,9 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         this.saveSlots = this.saveSlots.bind(this);
         this.checkAccessKind = this.checkAccessKind.bind(this);
         this.isObject = this.isObject.bind(this);
+        this.allowUnwrap = this.allowUnwrap.bind(this);
+        this.denyUnwrap = this.denyUnwrap.bind(this);
+        this.getIsUnwrapAllowed = this.getIsUnwrapAllowed.bind(this);
     }
 
     /** All active subscribers. */
@@ -45,6 +48,12 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
 
     /** Ensures that the state will be changed only using the built-in methods. */
     isAccessToStateAllowed = false;
+
+    /**
+     * Is state can be unwrapped.
+     * @default false
+     * */
+    isUnwrapAllowed = false;
 
     /**
      * Whether the state was changed after calling the state change methods.
@@ -119,12 +128,20 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
                     );
                 }
             } else {
+                if (this.getIsUnwrapAllowed()) {
+                    return this.saveSlots(target, prop);
+                }
+
                 return new Proxy(
                     this.saveSlots(target, prop),
                     this.handler(this),
                 );
             }
         } else if (this.isObject(target[prop]) && target[prop] !== null) {
+            if (this.getIsUnwrapAllowed()) {
+                return this.saveSlots(target, prop);
+            }
+
             return new Proxy(this.saveSlots(target, prop), this.handler(this));
         } else {
             return this.saveSlots(target, prop);
@@ -247,6 +264,21 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
     /** Getter for @see {StatemanjsBaseAPI.isAccessToStateAllowed} */
     getIsAccessToStateAllowed(): boolean {
         return this.isAccessToStateAllowed;
+    }
+
+    /** Allows unwrap state. Called while using the built-in @see {StatemanjsAPI.unwrap} method. */
+    allowUnwrap(): void {
+        this.isUnwrapAllowed = true;
+    }
+
+    /** Deny unwrap state. Called while using the built-in @see {StatemanjsAPI.unwrap} method. */
+    denyUnwrap(): void {
+        this.isUnwrapAllowed = false;
+    }
+
+    /** Getter for @see {StatemanjsBaseAPI.isUnwrapAllowed} */
+    getIsUnwrapAllowed(): boolean {
+        return this.isUnwrapAllowed;
     }
 
     /** Run active subscriber callbacks. */
@@ -441,24 +473,11 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
      * @returns unwrapped state
      */
     unwrap(): E {
-        const _unwrap = (obj: any): Record<string, any> => {
-            if (!obj || !this.#baseApi.isObject(obj)) {
-                return obj;
-            }
+        this.#baseApi.allowUnwrap();
+        const unwrapped = this.get();
+        this.#baseApi.denyUnwrap();
 
-            if (Object.prototype.toString.call(obj) === "[object Proxy]") {
-                return _unwrap(obj.target);
-            }
-
-            const result: Record<string, any> = {};
-            for (const key in obj) {
-                result[key] = _unwrap(obj[key]);
-            }
-            return result;
-        };
-
-        return (_unwrap(this.#proxiedState) as StateWrapper<E>)
-            .__STATEMANJS_STATE__;
+        return unwrapped;
     }
 }
 

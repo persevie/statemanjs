@@ -6,7 +6,7 @@ type Moon = {
 type Planet = {
     name: string;
     system: string;
-    moons?: Moon[];
+    moons: Moon[];
     countOfSatelites?: number | string;
     anyInfo?: any;
 };
@@ -224,6 +224,19 @@ describe("Statemanjs API", () => {
         unwrappedPlanet.name = "Earth"; // fix typo
 
         expect(unwrappedPlanet.name).toBe("Earth");
+    });
+
+    test("it should unwrap deep state", () => {
+        const planetState = createState<Planet>({
+            name: "Earth",
+            system: "Solar system",
+            moons: [{ name: "moon" }], // typo
+        });
+
+        const unwrappedPlanet = planetState.unwrap();
+        unwrappedPlanet.moons[0].name = "Moon"; // fix typo
+
+        expect(unwrappedPlanet.moons[0].name).toBe("Moon");
     });
 });
 

@@ -51,6 +51,12 @@ export interface StatemanjsBaseAPI<T extends object> {
     isAccessToStateAllowed: boolean;
 
     /**
+     * Is state can be unwrapped.
+     * @default false
+     * */
+    isUnwrapAllowed: boolean;
+
+    /**
      * Whether the state was changed after calling the state change methods.
      * The state will change only if the new value and the previous value are not equal.
      */
@@ -138,6 +144,15 @@ export interface StatemanjsBaseAPI<T extends object> {
 
     /** Getter for @see {StatemanjsBaseAPI.isAccessToStateAllowed} */
     getIsAccessToStateAllowed(): boolean;
+
+    /** Allows unwrap state. Called while using the built-in @see {StatemanjsAPI.unwrap} method. */
+    allowUnwrap(): void;
+
+    /** Deny unwrap state. Called while using the built-in @see {StatemanjsAPI.unwrap} method. */
+    denyUnwrap(): void;
+
+    /** Getter for @see {StatemanjsBaseAPI.isUnwrapAllowed} */
+    getIsUnwrapAllowed(): boolean;
 
     /** Run active subscriber callbacks. */
     runActiveSubscribersCb(): void;
