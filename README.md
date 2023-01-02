@@ -5,44 +5,67 @@
 ```ts
 import { createState } from "@persevie/statemanjs";
 
-const counterState = createState(0);
-
-counterState.subscribe((state) => {
-    if (Number.isInteger(state)) {
-        console.log("it's integer");
-    } else {
-        console.log("it's not integer");
-    }
-});
-
-function increaseCount() {
-    counterState.set(counterState.get() + 1);
-}
-```
-
-```ts
 type TransferElement = {
     speed: number;
     info: string;
     error?: string;
 };
 
-const transferState = createState<TransferElement>({
-    speed: 0,
-    info: "start",
+// Create a new state with initial value { speed: 0, info: "" }
+const transferState: = createState<TransferElement>({ speed: 0, info: "" });
+
+// Subscribe to state changes and log the updated state
+const unsubscribe = transferState.subscribe((state) => {
+  console.log("State updated:", state);
 });
 
+// Update the state to { speed: 50, info: "Transfer in progress" }
+transferState.update((state) => {
+  state.speed = 50;
+  state.info = "Transfer in progress";
+});
+
+// Get the current state
+const currentState = transferState.get();
+console.log("Current state:", currentState);
+
+// Unsubscribe from state updates
+unsubscribe();
+
+// Subscribe to state changes, but only log the updated state if the error
 transferState.subscribe(
-    // called only if the error property has been updated
-    (state) => {
-        console.log("Oops, something seems to be broken");
+  (state) => {
+    console.log("An error occurred:", state.error);
+  },
+  {
+    notifyCondition: (state) => {
+      state.error !== undefined;
     },
-    {
-        notifyCondition: (state) => {
-            state.error !== undefined;
-        },
-    },
+  },
 );
+
+// Set (create new object and replace old) the state to { speed: 0, info: "Ooops...", error: "Internet connection" }
+transferState.set({
+  speed: 0;
+  info: "Ooops...",
+  error: Internet connection,
+});
+
+// Get the active subscribers count
+console.log("Active subscribers count:", transferState.getActiveSubscribersCount());
+
+// Remove all subscribers
+transferState.unsubscribeAll();
+
+// Get the active subscribers count after unsubscribe
+console.log("Active subscribers count after unsubscribe:", transferState.getActiveSubscribersCount());
+
+// Output:
+// "State updated: { speed: 50, info: "Transfer in progress" }"
+// "Current state: { speed: 50, info: "Transfer in progress" }"
+// "An error occurred: "Internet connection""
+// "Active subscribers count: 1"
+// "Active subscribers count after unsubscribe: 0"
 ```
 
 # Table of Contents
@@ -50,68 +73,46 @@ transferState.subscribe(
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
--   [**Review**](#review)
-    -   [**Performance**](#performance)
-    -   [**Security and reliability**](#security-and-reliability)
-    -   [**Clear API**](#clear-api)
-    -   [**Everything can be a state**](#everything-can-be-a-state)
--   [**Usage**](#usage)
-    -   [**Installation and initialization the state**](#installation-and-initialization-the-state)
-    -   [**Subscribe to changes**](#subscribe-to-changes)
-    -   [**State change**](#state-change)
--   [**Benchmarks**](#benchmarks)
-    -   [Fill case.](#fill-case)
--   [**Integrations**](#integrations)
--   [**Statemanjs is:**](#statemanjs-is)
--   [**For contributors**](#for-contributors)
+- [Introduction](#introduction)
+- [API](#api)
+  - [Detailed view of the API:](#detailed-view-of-the-api)
+- [Any data type as a state](#any-data-type-as-a-state)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Subscribe to changes](#subscribe-to-changes)
+  - [State change](#state-change)
+  - [Unwrap](#unwrap)
+- [Performance test](#performance-test)
+    - [Fill case.](#fill-case)
+- [Integrations](#integrations)
+- [For contributors](#for-contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# **Review**
+# Introduction
 
-Statemanjs is a framework agnostic library for creating and managing the state of your JavaScript and NodeJS applications. Statemanjs is written in TypeScript so it has excellent support out of the box. statemanjs has integrations (delivered as npm packages) for front-end frameworks (react, vue, solid, etc.) that just make it easier to use. You can do without them if you wish.
-Statemanjs has the highest performance and reliability, and adheres to a clear and strict API without a boilerplate. Statemanjs is highly scalable and suitable for both small and large projects.
+Statemanjs is a framework-agnostic library for creating and managing the state of your JavaScript and NodeJS applications.
 
-Here are the basic principles of statemanjs:
+Key features:
 
--   Performance
--   Security and reliability
--   Clear API
--   Everything can be a state
+-   High performance: Statemanjs is designed to be fast and efficient, especially in large or complex applications.
+-   Reliability: The library's strict API, read-only state links and reliance on mutability ensure that state changes are reliable and secure.
+-   Clear API: Statemanjs has a clear and easy-to-use API, with methods for creating, updating, and subscribing to state changes.
+-   Support for any data type as a state: Statemanjs can handle any data type as a state, including primitives, complex objects, and multidimensional arrays.
+-   Framework-agnostic: Statemanjs can be used on its own without any additional packages, but it also has additional packages available for popular front-end frameworks such as React, Vue and Svelte.
+-   TypeScript support: Statemanjs is written in TypeScript, which means it has excellent support for type checking and type inference.
+-   Small size: Statemanjs has a tiny size of just 80.4 KB, making it easy to include in your project without adding unnecessary bloat.
 
-Each of these principles will be discussed below.
+# API
 
-## **Performance**
-
-Statemanjs was developed for JavaScript with all the features of this language in mind. Special attention is paid to single-threading and mutability.
-Most state managers for JS take an immutable approach. This means that when the state changes, a copy of it is always created. It can be imagined like this - a new value of the object has come → the state is cloned → the state is updated → the updated state is returned. Now it does not look so scary, but let's add single-threading to this. Your application is forced to wait for the state update to complete before doing something else. It would be more logical to follow this approach - a new value of the object has come → the state is updated → the updated state is returned. The number of stages has been reduced, and therefore productivity has increased. “But you only threw out cloning, does it affect performance so much?” - Yes. In JavaScript, immutability is a very expensive operation. This means that the cloning step will take time, which can be spent, for example, updating the UI or performing another task. Add to this a huge amount of logic in your application, and the performance difference becomes more and more significant.
-Statemanjs - takes a data mutability approach.
-
-Imagine the situation - you send 100 big files to the server and the UI should show the progress, speed, ETA, file name and path for each of the files. In addition to changing the sending information - other information that is not displayed in the UI, in the file structure - the number of bytes sent, how many bytes left, etc. is also changed. The user has to interact with the application. The immutable approach will not work. The application will freeze with every status update, and if you take into account that every file is sent in parallel, the application can freeze completely. Statemanjs can easily do it.
-
-## **Security and reliability**
-
-The immutable approach ensures that your state is not accidentally changed, which is not the case with the mutable approach. For example, the state of Mobx can be changed anywhere and any way. You can bind the current state to a variable, and when the variable changes, the state will also change. Agree, it does not look very reliable.
-
-Statemanjs is arranged differently here as well. You can only change/create state through built-in methods. **It's as if you put a state in a box and can only get a link to that state with a read-only restriction**.
-
-It is this API that guarantees the security and reliability of your state.
-
-## **Clear API**
-
-As it was written above, any manipulations with your state are possible only through built-in methods, so they should be understandable and convenient.
+Any manipulations with your state are possible only through built-in methods, so they should be understandable and convenient.
 The `createState` method is used to create a state:
 
 ```ts
 createState<T>(element: T): StatemanjsAPI<T>;
 ```
 
-There are 6 methods for interacting with the state - `set`, `get`, `subscribe`,
-`unsubscribeAll`,
-`getActiveSubscribersCount`,
-`update`.
-
-Here is a detailed view of the API:
+## Detailed view of the API:
 
 ```ts
 /**
@@ -161,7 +162,7 @@ update(updateCb: UpdateCb<T>): void;
 unwrap(): T;
 ```
 
-## **Everything can be a state**
+# Any data type as a state
 
 A state can be anything from primitives to complex and multidimensional objects. Just pass this to the `createState` function and use the state with no extra effort.
 
@@ -173,18 +174,22 @@ const soComplexObject = createState({
 });
 ```
 
-# **Usage**
-
-## **Installation and initialization the state**
+# Installation
 
 ```bash
 npm i @persevie/statemanjs
 ```
 
+# Usage
+
+To use Statemanjs, you'll need to create a state object and interact with it using the provided API methods.
+
+Here's an example of creating a state object for storing a user's name:
+
 ```js
 import { createState } from "@persevie/statemanjs";
 
-const counterState = createState(0);
+const userState = createState({ name: 'Jake' });
 ```
 
 You can also pass in the type of your state if you are using TypeScript:
@@ -208,7 +213,7 @@ const counterState = createState(1);
 const counter = counterState.get(); // 1
 ```
 
-## **Subscribe to changes**
+## Subscribe to changes
 
 The `subscribe` method takes a callback function and executes it on every state change. This callback function accepts the updated state.
 
@@ -266,7 +271,7 @@ Sometimes you need to find out how many active subscriptions a state has, for th
 const subscribersCount = counterState.getActiveSubscribersCount();
 ```
 
-## **State change**
+## State change
 
 There are two ways to change the state - `set` and `update`. The `set` method completely changes the state and is great for primitives and simple states.
 
@@ -280,9 +285,9 @@ counterState.subscribe(
     { notifyCondition: (state) => Number.isInteger(state) },
 );
 
-counterState.set(2); // --> 2
+counterState.set(2); // 2
 
-counterState.set(counterState.get() * 2); // --> 4
+counterState.set(counterState.get() * 2); // 4
 ```
 
 The `update` method is suitable for complex states (objects and arrays) in which only part of the state needs to be changed. The `update` method accepts the current state.
@@ -313,6 +318,8 @@ userState.update((state) => {
 });
 ```
 
+## Unwrap
+
 If you want unwrap state to javascript object - use `unwrap()` method:
 
 ```ts
@@ -335,9 +342,9 @@ const userState = createState<User>({
 const unwrappedUser = userState.unwrap();
 ```
 
-# **Benchmarks**
+# Performance test
 
-> The examples of storage implementations (code) for each state-manager (except statemanjs) were taken from the official documentation of these libraries.
+> The examples of storage implementations for each state-manager (except statemanjs) were taken from the official documentation of these libraries.
 
 ### Fill case.
 
@@ -449,23 +456,13 @@ Below is a table with the results of the **fill** benchmark.
 </tbody>
 </table>
 
-Statemanjs showed the best results in all tests. Some will argue that this case is biased, because adding an element to an array entails cloning in immutable state managers. But look at the test with adding a single element to an empty array - even in this case statemanjs is faster than the opponents. All state operations on this statemanager are faster. Redux performed quite well compared to effector and mobx, but it's worth noting that it's a very simple storage with few reducers. In real projects its speed will be much slower. Mobx has shown that it is scalable, although the performance at the beginning leaves a lot to be desired. Effector is the outsider in this comparison, but in real projects its performance will be better than redux. Originally, the plan was to test zustand and xstate instead of effector, but the test results were unsatisfactory.
+Statemanjs has significantly better performance than others.
+This suggests that Statemanjs may be a good choice for state management in JavaScript applications that need to perform many updates on large data sets in a short period of time. It may also be a good choice for applications that need to perform updates on complex data structures, as Statemanjs is able to handle these updates more efficiently.
 
-# **Integrations**
+# Integrations
 
 Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](https://github.com/persevie/statemanjs-react), [vue](https://github.com/persevie/statemanjs-vue), [solid](https://github.com/persevie/statemanjs-solid). Statemanjs supports svelte out of the box and doesn't need any additional packages.
 To work with additional packages, the main statemanjs package is required.
-
-# **Statemanjs is:**
-
--   very fast
--   secure
--   scales perfectly
--   has a concise API
--   framework-independent
--   is small in size
--   has no dependencies
-
-# **For contributors**
+# For contributors
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
