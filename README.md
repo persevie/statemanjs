@@ -12,7 +12,7 @@ type TransferElement = {
 };
 
 // Create a new state with initial value { speed: 0, info: "" }
-const transferState: = createState<TransferElement>({ speed: 0, info: "" });
+const transferState = createState<TransferElement>({ speed: 0, info: "" });
 
 // Subscribe to state changes and log the updated state
 const unsubscribe = transferState.subscribe((state) => {
@@ -73,19 +73,19 @@ console.log("Active subscribers count after unsubscribe:", transferState.getActi
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [Introduction](#introduction)
-- [API](#api)
-  - [Detailed view of the API:](#detailed-view-of-the-api)
-- [Any data type as a state](#any-data-type-as-a-state)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Subscribe to changes](#subscribe-to-changes)
-  - [State change](#state-change)
-  - [Unwrap](#unwrap)
-- [Performance test](#performance-test)
-    - [Fill case.](#fill-case)
-- [Integrations](#integrations)
-- [For contributors](#for-contributors)
+-   [Introduction](#introduction)
+-   [API](#api)
+    -   [Detailed view of the API:](#detailed-view-of-the-api)
+-   [Any data type as a state](#any-data-type-as-a-state)
+-   [Installation](#installation)
+-   [Usage](#usage)
+    -   [Subscribe to changes](#subscribe-to-changes)
+    -   [State change](#state-change)
+    -   [Unwrap](#unwrap)
+-   [Performance test](#performance-test)
+    -   [Fill case.](#fill-case)
+-   [Integrations](#integrations)
+-   [For contributors](#for-contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -189,7 +189,7 @@ Here's an example of creating a state object for storing a user's name:
 ```js
 import { createState } from "@persevie/statemanjs";
 
-const userState = createState({ name: 'Jake' });
+const userState = createState({ name: "Jake" });
 ```
 
 You can also pass in the type of your state if you are using TypeScript:
@@ -463,6 +463,7 @@ This suggests that Statemanjs may be a good choice for state management in JavaS
 
 Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](https://github.com/persevie/statemanjs-react), [vue](https://github.com/persevie/statemanjs-vue), [solid](https://github.com/persevie/statemanjs-solid). Statemanjs supports svelte out of the box and doesn't need any additional packages.
 To work with additional packages, the main statemanjs package is required.
+
 # For contributors
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
