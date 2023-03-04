@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
-import type { StatemanjsAPI, SubscriptionOptions } from "@persevie/statemanjs";
+import type {
+    StatemanjsAPI,
+    SubscriptionOptions,
+    StatemanjsComputedAPI,
+} from "@persevie/statemanjs";
 
 /**
  * Make the react component observe the statemanjs.
@@ -11,7 +15,7 @@ import type { StatemanjsAPI, SubscriptionOptions } from "@persevie/statemanjs";
  * @returns Reactive state.
  */
 function useStatemanjs<T>(
-    statemanjs: StatemanjsAPI<T>,
+    statemanjs: StatemanjsAPI<T> | StatemanjsComputedAPI<T>,
     subscriptionOptions: SubscriptionOptions<T> = {},
 ): T {
     const [_, forceRender] = useState({});
