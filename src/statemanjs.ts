@@ -324,6 +324,7 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
     /** Remove all subscribers */
     unsubscribeAll(): void {
         this.activeSubscriberIds = [];
+        this.activeSubscribers = [];
     }
 
     /** Checks if the element is an object */
