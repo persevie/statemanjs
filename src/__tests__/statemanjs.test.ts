@@ -262,7 +262,7 @@ describe("Statemanjs security", () => {
         });
     });
 
-    test("it should deny direct acces", () => {
+    test("it should deny direct access", () => {
         const planet = {
             name: "Earth",
             system: "Solar system",
