@@ -82,6 +82,7 @@ console.log("Active subscribers count after unsubscribe:", transferState.getActi
     -   [Subscribe to changes](#subscribe-to-changes)
     -   [State change](#state-change)
     -   [Unwrap](#unwrap)
+    -   [Computed state](#computed-state)
 -   [Performance test](#performance-test)
     -   [Fill case.](#fill-case)
 -   [Integrations](#integrations)
@@ -160,6 +161,42 @@ update(updateCb: UpdateCb<T>): void;
  * @returns unwrapped state
  */
 unwrap(): T;
+
+interface StatemanjsComputedAPI<T> {
+    /** Get current state */
+    get(): T;
+    /**
+     * State change subscription method.
+     * Accepts the callback function (subscription callback),
+     * which will be called on each update, and the subscription parameter object.
+     * In the options, you can specify information about the subscription,
+     * as well as specify the condition under which the subscriber will be notified.
+     * Returns the unsubscribe callback function.
+     *
+     * @param subscriptionCb A function that runs on every update.
+     * @param subscriptionOptions Additional information and notification condition.
+     * @returns Unsubscribe callback function.
+     */
+    subscribe(
+        subscriptionCb: SubscriptionCb<T>,
+        subscriptionOptions?: SubscriptionOptions<T>,
+    ): UnsubscribeCb;
+
+    /** Remove all subscribers */
+    unsubscribeAll(): void;
+
+    /**
+     * Returns count of all active subscribers.
+     * @returns number.
+     */
+    getActiveSubscribersCount(): number;
+
+    /**
+     * Unwrap a proxy object to a regular JavaScript object
+     * @returns unwrapped state
+     */
+    unwrap(): T;
+}
 ```
 
 # Any data type as a state
@@ -340,6 +377,24 @@ const userState = createState<User>({
 });
 
 const unwrappedUser = userState.unwrap();
+```
+
+## Computed state
+
+You can create a computed state with the `createComputedState` function. It returns an instance of statemanjs, but without the ability to set or update the state because of its specificity (_see the `StatemanjsComputedAPI` interface_).
+This function takes two parameters:
+
+-   A callback function to create a state value (_run when at least one of the dependencies has been changed_).
+-   An array of dependencies (_an instance of statemanjs_).
+
+```ts
+const problemState = createState<boolean>(false);
+
+const statusComputedState = createComputedState<string>((): string => {
+    return problemState.get()
+        ? "Houston, we have a problem"
+        : "Houston, everything is fine";
+}, [problemState]);
 ```
 
 # Performance test
