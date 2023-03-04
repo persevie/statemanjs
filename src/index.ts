@@ -1,4 +1,4 @@
-import createState from "./statemanjs";
+import { createState, createComputed } from "./statemanjs";
 
 export type { StatemanjsAPI, SubscriptionOptions } from "./entities";
-export { createState };
+export { createState, createComputed };

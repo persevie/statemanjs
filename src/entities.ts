@@ -224,3 +224,39 @@ export interface StatemanjsAPI<T> {
      */
     unwrap(): T;
 }
+
+export interface StatemanjsComputedAPI<T> {
+    /** Get current state */
+    get(): T;
+    /**
+     * State change subscription method.
+     * Accepts the callback function (subscription callback),
+     * which will be called on each update, and the subscription parameter object.
+     * In the options, you can specify information about the subscription,
+     * as well as specify the condition under which the subscriber will be notified.
+     * Returns the unsubscribe callback function.
+     *
+     * @param subscriptionCb A function that runs on every update.
+     * @param subscriptionOptions Additional information and notification condition.
+     * @returns Unsubscribe callback function.
+     */
+    subscribe(
+        subscriptionCb: SubscriptionCb<T>,
+        subscriptionOptions?: SubscriptionOptions<T>,
+    ): UnsubscribeCb;
+
+    /** Remove all subscribers */
+    unsubscribeAll(): void;
+
+    /**
+     * Returns count of all active subscribers.
+     * @returns number.
+     */
+    getActiveSubscribersCount(): number;
+
+    /**
+     * Unwrap a proxy object to a regular JavaScript object
+     * @returns unwrapped state
+     */
+    unwrap(): T;
+}

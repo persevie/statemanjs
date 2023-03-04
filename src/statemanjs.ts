@@ -7,6 +7,7 @@ import {
     UpdateCb,
     Subscriber,
     SubscriptionOptions,
+    StatemanjsComputedAPI,
 } from "./entities";
 import { formatError, getErrorMessage } from "./helpers";
 
@@ -481,8 +482,62 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
     }
 }
 
-function createState<T>(element: T): StatemanjsAPI<T> {
+class _StatemanjsComputed<T> implements StatemanjsComputedAPI<T> {
+    constructor(callback: () => T, deps: StatemanjsAPI<any>[]) {
+        if (!deps.length) {
+            throw new Error("");
+        }
+
+        this.#statemanjs = new _Statemanjs<T>(callback());
+
+        for (const d of deps) {
+            d.subscribe((): void => {
+                this.#statemanjs.set(callback());
+            });
+        }
+
+        // Bindings
+        this.get = this.get.bind(this);
+        this.subscribe = this.subscribe.bind(this);
+        this.unsubscribeAll = this.unsubscribeAll.bind(this);
+        this.getActiveSubscribersCount =
+            this.getActiveSubscribersCount.bind(this);
+        this.unwrap = this.unwrap.bind(this);
+    }
+
+    #statemanjs: StatemanjsAPI<T>;
+
+    get(): T {
+        return this.#statemanjs.get();
+    }
+
+    subscribe(
+        subscriptionCb: SubscriptionCb<T>,
+        subscriptionOptions?: SubscriptionOptions<T> | undefined,
+    ): UnsubscribeCb {
+        return this.#statemanjs.subscribe(subscriptionCb, subscriptionOptions);
+    }
+
+    unsubscribeAll(): void {
+        this.#statemanjs.unsubscribeAll();
+    }
+
+    getActiveSubscribersCount(): number {
+        return this.#statemanjs.getActiveSubscribersCount();
+    }
+
+    unwrap(): T {
+        return this.#statemanjs.unwrap();
+    }
+}
+
+export function createState<T>(element: T): StatemanjsAPI<T> {
     return new _Statemanjs(element);
 }
 
-export default createState;
+export function createComputed<T>(
+    callback: () => T,
+    deps: StatemanjsAPI<any>[],
+): StatemanjsComputedAPI<T> {
+    return new _StatemanjsComputed<T>(callback, deps);
+}

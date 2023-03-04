@@ -1,4 +1,4 @@
-import { createState } from "../index";
+import { createComputed, createState } from "../index";
 
 type Moon = {
     name: string;
@@ -583,6 +583,87 @@ describe("Statemanjs security", () => {
         planetState.update((s) => {
             s.moons?.unshift({ name: "Deimos" });
         });
+    });
+});
+
+describe("Statemanjs computed API", () => {
+    test("it should create computed state and react on changes (subscripe method)", () => {
+        const DISTANCE = 225 * 1000000; // 225 million km
+        const MAX_SPEED = 27000; // km/hr
+
+        const speedState = createState<number>(10000);
+        const travelTimeState = createState<number>(0); // seconds
+
+        let remaningTravelTime = "";
+
+        const remaningTravelTimeComputedState =
+            createComputed<string>((): string => {
+                const speedKmPerSec = speedState.get() / 3600; // convert km/h to km/s
+                const remainingDistance =
+                    DISTANCE - speedKmPerSec * travelTimeState.get(); // calculate remaining distance
+                const remainingTime = remainingDistance / speedKmPerSec; // calculate remaining time in seconds
+
+                // calculate months, weeks, days, hours, minutes, and seconds
+                const months = Math.floor(remainingTime / 2.628e6);
+                const weeks = Math.floor(remainingTime / 604800);
+                const days = Math.floor(remainingTime / 86400);
+                const hours = Math.floor(remainingTime / 3600);
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = Math.floor(remainingTime);
+
+                return `Mars is: ${months} month / ${weeks} weeks / ${days} days / ${hours} hours / ${minutes} minutes / ${seconds} seconds away`;
+            }, [speedState, travelTimeState]);
+
+        // test initialization
+        expect(remaningTravelTimeComputedState.get()).toEqual(
+            "Mars is: 30 month / 133 weeks / 937 days / 22500 hours / 1350000 minutes / 81000000 seconds away",
+        );
+
+        remaningTravelTimeComputedState.subscribe((s) => {
+            remaningTravelTime = s;
+        });
+
+        speedState.set(MAX_SPEED);
+        travelTimeState.set(216000);
+
+        expect(remaningTravelTime).toEqual(
+            "Mars is: 11 month / 49 weeks / 344 days / 8273 hours / 496400 minutes / 29784000 seconds away",
+        );
+
+        travelTimeState.set(16200000);
+
+        expect(remaningTravelTime).toEqual(
+            "Mars is: 5 month / 22 weeks / 159 days / 3833 hours / 230000 minutes / 13800000 seconds away",
+        );
+    });
+
+    test("it should throw an error due to a missing dependency states array", () => {
+        const problemState = createState<boolean>(true);
+
+        const expectErr = () =>
+            createComputed<string>((): string => {
+                return problemState.get()
+                    ? "Houston, we have a problem"
+                    : "Houston, everything is fine";
+            }, []);
+
+        expect(expectErr).toThrow();
+    });
+
+    test("It shouldn't work to change directly", () => {
+        const problemState = createState<boolean>(false);
+
+        const statusComputedState = createComputed<string>((): string => {
+            return problemState.get()
+                ? "Houston, we have a problem"
+                : "Houston, everything is fine";
+        }, [problemState]);
+
+        statusComputedState.get().replace("Houston", "Hacker");
+
+        expect(statusComputedState.get()).toEqual(
+            "Houston, everything is fine",
+        );
     });
 });
 
