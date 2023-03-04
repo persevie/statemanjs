@@ -535,7 +535,7 @@ export function createState<T>(element: T): StatemanjsAPI<T> {
     return new _Statemanjs(element);
 }
 
-export function createComputed<T>(
+export function createComputedState<T>(
     callback: () => T,
     deps: StatemanjsAPI<any>[],
 ): StatemanjsComputedAPI<T> {

@@ -1,4 +1,4 @@
-import { createComputed, createState } from "../index";
+import { createComputedState, createState } from "../index";
 
 type Moon = {
     name: string;
@@ -597,7 +597,7 @@ describe("Statemanjs computed API", () => {
         let remaningTravelTime = "";
 
         const remaningTravelTimeComputedState =
-            createComputed<string>((): string => {
+            createComputedState<string>((): string => {
                 const speedKmPerSec = speedState.get() / 3600; // convert km/h to km/s
                 const remainingDistance =
                     DISTANCE - speedKmPerSec * travelTimeState.get(); // calculate remaining distance
@@ -641,7 +641,7 @@ describe("Statemanjs computed API", () => {
         const problemState = createState<boolean>(true);
 
         const expectErr = () =>
-            createComputed<string>((): string => {
+            createComputedState<string>((): string => {
                 return problemState.get()
                     ? "Houston, we have a problem"
                     : "Houston, everything is fine";
@@ -653,7 +653,7 @@ describe("Statemanjs computed API", () => {
     test("It shouldn't work to change directly", () => {
         const problemState = createState<boolean>(false);
 
-        const statusComputedState = createComputed<string>((): string => {
+        const statusComputedState = createComputedState<string>((): string => {
             return problemState.get()
                 ? "Houston, we have a problem"
                 : "Houston, everything is fine";
