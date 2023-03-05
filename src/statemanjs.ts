@@ -489,7 +489,10 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
 }
 
 class _StatemanjsComputed<T> implements StatemanjsComputedAPI<T> {
-    constructor(callback: () => T, deps: StatemanjsAPI<any>[]) {
+    constructor(
+        callback: () => T,
+        deps: (StatemanjsAPI<any> | StatemanjsComputedAPI<any>)[],
+    ) {
         if (!deps.length) {
             throw new Error("");
         }
