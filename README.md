@@ -170,7 +170,7 @@ unwrap(): T;
 The `createComputedState` method is used to create a computed state:
 
 ```ts
-createComputedState<T>(callback: () => T, deps: StatemanjsAPI<any>[]): StatemanjsComputedAPI<T>
+createComputedState<T>(callback: () => T, deps: (StatemanjsAPI<any> | StatemanjsComputedAPI<any>)[]): StatemanjsComputedAPI<T>
 ```
 
 `StatemanjsComputedAPI<T>`
