@@ -75,7 +75,6 @@ console.log("Active subscribers count after unsubscribe:", transferState.getActi
 
 -   [Introduction](#introduction)
 -   [API](#api)
-    -   [Detailed view of the API:](#detailed-view-of-the-api)
 -   [Any data type as a state](#any-data-type-as-a-state)
 -   [Installation](#installation)
 -   [Usage](#usage)
@@ -113,7 +112,7 @@ The `createState` method is used to create a state:
 createState<T>(element: T): StatemanjsAPI<T>;
 ```
 
-## Detailed view of the API:
+`StatemanjsAPI<T>`
 
 ```ts
 /**
@@ -128,24 +127,29 @@ set(newState: T): boolean;
 get(): T;
 
 /**
- * The method of subscribing to the state change.
+ * The method of subscribing to the status change.
  * Accepts a callback function (subscription callback),
  * which will be called at each update, and a subscription options object.
  * In the options, you can specify information about the subscription,
- * as well as specify the condition under which the subscriber will be notified.
+ * as well as specify the condition under which the subscriber will be notified
+ * and mark the subscriber as protected. All subscribers are unprotected by default.
+ * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
  * Returns the unsubscribe callback function.
  *
  * @param subscriptionCb A function that runs on every update.
  * @param subscriptionOptions Additional information and notification condition.
  * @returns Unsubscribe callback function.
  */
-subscribe(subscriptionCb: SubscriptionCb<T>, subscriptionOptions?: SubscriptionOptions<T>): UnsubscribeCb;
+subscribe(
+    subscriptionCb: SubscriptionCb<T>,
+    subscriptionOptions?: SubscriptionOptions<T>,
+): UnsubscribeCb;
 
-/** Remove all subscribers */
+/** Remove all unprotected subscribers */
 unsubscribeAll(): void;
 
 /**
- * Returns counter of all active subscribers.
+ * Returns count of all active subscribers.
  * @returns number.
  */
 getActiveSubscribersCount(): number;
@@ -161,42 +165,50 @@ update(updateCb: UpdateCb<T>): void;
  * @returns unwrapped state
  */
 unwrap(): T;
+```
 
-interface StatemanjsComputedAPI<T> {
-    /** Get current state */
-    get(): T;
-    /**
-     * State change subscription method.
-     * Accepts the callback function (subscription callback),
-     * which will be called on each update, and the subscription parameter object.
-     * In the options, you can specify information about the subscription,
-     * as well as specify the condition under which the subscriber will be notified.
-     * Returns the unsubscribe callback function.
-     *
-     * @param subscriptionCb A function that runs on every update.
-     * @param subscriptionOptions Additional information and notification condition.
-     * @returns Unsubscribe callback function.
-     */
-    subscribe(
-        subscriptionCb: SubscriptionCb<T>,
-        subscriptionOptions?: SubscriptionOptions<T>,
-    ): UnsubscribeCb;
+The `createComputedState` method is used to create a computed state:
 
-    /** Remove all subscribers */
-    unsubscribeAll(): void;
+```ts
+createComputedState<T>(callback: () => T, deps: StatemanjsAPI<any>[]): StatemanjsComputedAPI<T>
+```
 
-    /**
-     * Returns count of all active subscribers.
-     * @returns number.
-     */
-    getActiveSubscribersCount(): number;
+`StatemanjsComputedAPI<T>`
 
-    /**
-     * Unwrap a proxy object to a regular JavaScript object
-     * @returns unwrapped state
-     */
-    unwrap(): T;
-}
+```ts
+/** Get current state */
+get(): T;
+/**
+ * State change subscription method.
+ * Accepts the callback function (subscription callback),
+ * which will be called on each update, and the subscription parameter object.
+ * In the options, you can specify information about the subscription,
+ * as well as specify the condition under which the subscriber will be notified.
+ * Returns the unsubscribe callback function.
+ *
+ * @param subscriptionCb A function that runs on every update.
+ * @param subscriptionOptions Additional information and notification condition.
+ * @returns Unsubscribe callback function.
+ */
+subscribe(
+    subscriptionCb: SubscriptionCb<T>,
+    subscriptionOptions?: SubscriptionOptions<T>,
+): UnsubscribeCb;
+
+/** Remove all subscribers */
+unsubscribeAll(): void;
+
+/**
+ * Returns count of all active subscribers.
+ * @returns number.
+ */
+getActiveSubscribersCount(): number;
+
+/**
+ * Unwrap a proxy object to a regular JavaScript object
+ * @returns unwrapped state
+ */
+unwrap(): T;
 ```
 
 # Any data type as a state
@@ -280,6 +292,19 @@ counterState.subscribe(
 );
 ```
 
+To protect a subscriber - pass `protect: true` to the second argument of the object. Protected subscribers can only be unsubscribed using the unsubscribe method returned by the `subscribe` method.
+
+```js
+const counterState = createState(0);
+
+counterState.subscribe(
+    (state) => {
+        console.log("it's integer");
+    },
+    { notifyCondition: (state) => Number.isInteger(state), protect: true },
+);
+```
+
 The `subscribe` method returns a callback to unsubscribe.
 
 ```js
@@ -296,7 +321,7 @@ const unsub = counterState.subscribe(
 unsub();
 ```
 
-To unsubscribe all active subscriptions from a state, use the `unsubscribeAll` method;
+To unsubscribe all active and unprotected subscriptions from a state, use the `unsubscribeAll` method;
 
 ```js
 counterState.unsubscribeAll();
@@ -386,6 +411,8 @@ This function takes two parameters:
 
 -   A callback function to create a state value (_run when at least one of the dependencies has been changed_).
 -   An array of dependencies (_an instance of statemanjs_).
+
+Computed state creates only protected subscribers.
 
 ```ts
 const problemState = createState<boolean>(false);

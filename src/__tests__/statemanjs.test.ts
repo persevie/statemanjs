@@ -175,7 +175,7 @@ describe("Statemanjs API", () => {
         expect(moonObserverState.getActiveSubscribersCount()).toBe(0);
     });
 
-    test("it should delete all subscribers (unsubscribeAll method)", () => {
+    test("it should delete all unprotected subscribers (unsubscribeAll method)", () => {
         let isTheMoonInPerigee = false;
         let isTheMoonInApogee = true;
         isTheMoonInPerigee;
@@ -191,14 +191,14 @@ describe("Statemanjs API", () => {
             () => {
                 isTheMoonInPerigee = true;
             },
-            { notifyCondition: (s) => s.distance === perigee },
+            { notifyCondition: (s) => s.distance === perigee, protect: true },
         );
 
         moonObserverState.subscribe(
             () => {
                 isTheMoonInApogee = true;
             },
-            { notifyCondition: (s) => s.distance === apogee },
+            { notifyCondition: (s) => s.distance === apogee, protect: false },
         );
 
         moonObserverState.subscribe((s) => {
@@ -210,7 +210,7 @@ describe("Statemanjs API", () => {
 
         moonObserverState.unsubscribeAll();
 
-        expect(moonObserverState.getActiveSubscribersCount()).toBe(0);
+        expect(moonObserverState.getActiveSubscribersCount()).toBe(1);
     });
 
     test("it should unwrap state", () => {

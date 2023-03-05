@@ -12,6 +12,7 @@ export type Subscriber = {
      * For internal use.
      */
     notifyCondition?: () => unknown;
+    isProtected: boolean;
 };
 
 /**
@@ -30,10 +31,11 @@ export type UpdateCb<T> = (state: T) => void;
 
 /**
  * It may contain additional information about the subscriber,
- * as well as a condition for notification.
+ * as well as a condition for notification and a mark that the subscriber is protected..
  */
 export type SubscriptionOptions<T> = {
     notifyCondition?: (state: T) => unknown;
+    protect?: boolean;
 };
 
 /**
@@ -163,7 +165,7 @@ export interface StatemanjsBaseAPI<T extends object> {
      */
     getActiveSubscribersCount(): number;
 
-    /** Remove all subscribers */
+    /** Remove all unprotected subscribers */
     unsubscribeAll(): void;
 
     /** Checks if the element is an object */
@@ -187,11 +189,13 @@ export interface StatemanjsAPI<T> {
     get(): T;
 
     /**
-     * State change subscription method.
-     * Accepts the callback function (subscription callback),
-     * which will be called on each update, and the subscription parameter object.
+     * The method of subscribing to the status change.
+     * Accepts a callback function (subscription callback),
+     * which will be called at each update, and a subscription options object.
      * In the options, you can specify information about the subscription,
-     * as well as specify the condition under which the subscriber will be notified.
+     * as well as specify the condition under which the subscriber will be notified
+     * and mark the subscriber as protected. All subscribers are unprotected by default.
+     * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
      * Returns the unsubscribe callback function.
      *
      * @param subscriptionCb A function that runs on every update.
@@ -203,7 +207,7 @@ export interface StatemanjsAPI<T> {
         subscriptionOptions?: SubscriptionOptions<T>,
     ): UnsubscribeCb;
 
-    /** Remove all subscribers */
+    /** Remove all unprotected subscribers */
     unsubscribeAll(): void;
 
     /**
@@ -229,11 +233,13 @@ export interface StatemanjsComputedAPI<T> {
     /** Get current state */
     get(): T;
     /**
-     * State change subscription method.
-     * Accepts the callback function (subscription callback),
-     * which will be called on each update, and the subscription parameter object.
+     * The method of subscribing to the status change.
+     * Accepts a callback function (subscription callback),
+     * which will be called at each update, and a subscription options object.
      * In the options, you can specify information about the subscription,
-     * as well as specify the condition under which the subscriber will be notified.
+     * as well as specify the condition under which the subscriber will be notified
+     * and mark the subscriber as protected. All subscribers are unprotected by default.
+     * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
      * Returns the unsubscribe callback function.
      *
      * @param subscriptionCb A function that runs on every update.
@@ -245,7 +251,7 @@ export interface StatemanjsComputedAPI<T> {
         subscriptionOptions?: SubscriptionOptions<T>,
     ): UnsubscribeCb;
 
-    /** Remove all subscribers */
+    /** Remove all unprotected subscribers */
     unsubscribeAll(): void;
 
     /**

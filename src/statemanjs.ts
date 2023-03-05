@@ -321,10 +321,12 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         return this.activeSubscriberIds.length;
     }
 
-    /** Remove all subscribers */
+    /** Remove all unprotected subscribers */
     unsubscribeAll(): void {
-        this.activeSubscriberIds = [];
-        this.activeSubscribers = [];
+        this.activeSubscribers = this.activeSubscribers.filter(
+            (i) => i.isProtected,
+        );
+        this.activeSubscriberIds = this.activeSubscribers.map((i) => i.subId);
     }
 
     /** Checks if the element is an object */
@@ -406,7 +408,9 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
      * Accepts a callback function (subscription callback),
      * which will be called at each update, and a subscription options object.
      * In the options, you can specify information about the subscription,
-     * as well as specify the condition under which the subscriber will be notified.
+     * as well as specify the condition under which the subscriber will be notified
+     * and mark the subscriber as protected. All subscribers are unprotected by default.
+     * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
      * Returns the unsubscribe callback function.
      *
      * @param subscriptionCb A function that runs on every update.
@@ -428,12 +432,13 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
                 notifyConditionCb !== undefined
                     ? () => notifyConditionCb(this.get())
                     : undefined,
+            isProtected: subscriptionOptions.protect ?? false,
         });
 
         return (): void => this.#baseApi.unsubscribeById(subscriberId);
     }
 
-    /** Remove all subscribers */
+    /** Remove all unprotected subscribers */
     unsubscribeAll(): void {
         this.#baseApi.unsubscribeAll();
     }
@@ -492,9 +497,12 @@ class _StatemanjsComputed<T> implements StatemanjsComputedAPI<T> {
         this.#statemanjs = new _Statemanjs<T>(callback());
 
         for (const d of deps) {
-            d.subscribe((): void => {
-                this.#statemanjs.set(callback());
-            });
+            d.subscribe(
+                (): void => {
+                    this.#statemanjs.set(callback());
+                },
+                { protect: true },
+            );
         }
 
         // Bindings
@@ -508,10 +516,25 @@ class _StatemanjsComputed<T> implements StatemanjsComputedAPI<T> {
 
     #statemanjs: StatemanjsAPI<T>;
 
+    /** Get current state */
     get(): T {
         return this.#statemanjs.get();
     }
 
+    /**
+     * The method of subscribing to the status change.
+     * Accepts a callback function (subscription callback),
+     * which will be called at each update, and a subscription options object.
+     * In the options, you can specify information about the subscription,
+     * as well as specify the condition under which the subscriber will be notified
+     * and mark the subscriber as protected. All subscribers are unprotected by default.
+     * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
+     * Returns the unsubscribe callback function.
+     *
+     * @param subscriptionCb A function that runs on every update.
+     * @param subscriptionOptions Additional information and notification condition.
+     * @returns Unsubscribe callback function.
+     */
     subscribe(
         subscriptionCb: SubscriptionCb<T>,
         subscriptionOptions?: SubscriptionOptions<T> | undefined,
@@ -519,14 +542,23 @@ class _StatemanjsComputed<T> implements StatemanjsComputedAPI<T> {
         return this.#statemanjs.subscribe(subscriptionCb, subscriptionOptions);
     }
 
+    /** Remove all unprotected subscribers */
     unsubscribeAll(): void {
         this.#statemanjs.unsubscribeAll();
     }
 
+    /**
+     * Returns count of all active subscribers.
+     * @returns number.
+     */
     getActiveSubscribersCount(): number {
         return this.#statemanjs.getActiveSubscribersCount();
     }
 
+    /**
+     * Unwrap a proxy object to a regular JavaScript object
+     * @returns unwrapped state
+     */
     unwrap(): T {
         return this.#statemanjs.unwrap();
     }
