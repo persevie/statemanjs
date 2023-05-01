@@ -11,7 +11,7 @@ export type Subscriber = {
      * To determine whether subscribers need to be notified of a status change.
      * For internal use.
      */
-    notifyCondition?: () => unknown;
+    notifyCondition?: () => boolean;
     isProtected: boolean;
 };
 
@@ -31,18 +31,29 @@ export type UpdateCb<T> = (state: T) => void;
 
 /**
  * It may contain additional information about the subscriber,
- * as well as a condition for notification and a mark that the subscriber is protected..
+ * as well as a condition for notification, a mark that the subscriber is protected and properties to watch.
  */
 export type SubscriptionOptions<T> = {
-    notifyCondition?: (state: T) => unknown;
+    notifyCondition?: (state: T) => boolean;
     protect?: boolean;
+    properties?: Array<string>;
 };
+
+export type ActionKind = "update" | "set" | "none";
 
 /**
  * Private, base API for statemanjs.
  * In addition to the methods, it stores the entities necessary for the 'statemanjs' to work.
  */
 export interface StatemanjsBaseAPI<T extends object> {
+    /**
+     * Automatically updated;
+     * if at least one subscriber has a property to watch - true, otherwise - false.
+     */
+    isNeedToCheckProperties: boolean;
+
+    acionKind: ActionKind;
+
     /** All active subscribers. */
     activeSubscribers: Subscriber[];
 
@@ -69,6 +80,8 @@ export interface StatemanjsBaseAPI<T extends object> {
      */
     dangerMethods: string[];
 
+    pathToChangedProperty: string[];
+
     /** The state has been changed. */
     setWasChangedToTrue(): void;
 
@@ -91,10 +104,10 @@ export interface StatemanjsBaseAPI<T extends object> {
      * Returns an error if a forbidden method was used
      * or the state element was accessed directly otherwise returns element of state.
      */
-    checkAccessKind(target: any, prop: any): any;
+    checkAccessKind(target: any, prop: any, path: string[]): any;
 
     /** Proxy handler. Intercepts all state actions and checks access status. */
-    handler(context: StatemanjsBaseAPI<T>): ProxyHandler<T>;
+    handler(context: StatemanjsBaseAPI<T>, path: string[]): ProxyHandler<T>;
 
     /**
      * Creates a proxy handler @see {StatemanjsBaseAPI.handler} with needed context.
@@ -170,6 +183,23 @@ export interface StatemanjsBaseAPI<T extends object> {
 
     /** Checks if the element is an object */
     isObject(entity: unknown): boolean;
+
+    /** Adds a path to the changed property. */
+    addPathToChangedProperty(path: string): void;
+
+    getPathToChangedProperty(): string[];
+
+    /** Removes all paths from the changed property.  */
+    resetPathToChangedProperty(): void;
+
+    setAcionKindToSet(): void;
+
+    setAcionKindToUpdate(): void;
+
+    setAcionKindToNone(): void;
+
+    /** Checks if the passed properties are part of any path. */
+    isAnyPropertyPartOfAnyPath(properties: string[], paths: string[]): boolean;
 }
 
 /**
@@ -220,13 +250,30 @@ export interface StatemanjsAPI<T> {
      * Flexible state update.
      * @param updateCb Callback for state updates.
      */
-    update(updateCb: UpdateCb<T>): void;
+    update(updateCb: UpdateCb<T>, currentState?: T): void;
 
     /**
      * Unwrap a proxy object to a regular JavaScript object
      * @returns unwrapped state
      */
     unwrap(): T;
+
+    /**
+     * Dispatch an async action
+     * @param action An async action. It accepts a stateManager object,
+     * which is used to access the current state.
+     * @returns Promise.
+     */
+    asyncAction(
+        action: (stateManager: StatemanjsAPI<T>) => Promise<void>,
+    ): Promise<void>;
+
+    /**
+     * Create a computed state for a state property.
+     * @param selectorFn A function that returns a value of a state property.
+     * @returns A computed state.
+     */
+    createSelector<E>(selectorFn: (state: T) => E): StatemanjsComputedAPI<E>;
 }
 
 export interface StatemanjsComputedAPI<T> {

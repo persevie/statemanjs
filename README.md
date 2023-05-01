@@ -3,69 +3,178 @@
 </p>
 
 ```ts
-import { createState } from "@persevie/statemanjs";
+import { createState, createComputedState } from "@persevie/statemanjs";
 
-type TransferElement = {
-    speed: number;
-    info: string;
-    error?: string;
+type Planet = {
+    name: string;
+    system: string;
+    satelites: string[];
+    hasLife: boolean;
+    distance: number;
+    averageTemperature: number;
 };
 
-// Create a new state with initial value { speed: 0, info: "" }
-const transferState = createState<TransferElement>({ speed: 0, info: "" });
+type Coordinates = {
+    latitude: number;
+    longitude: number;
+};
 
-// Subscribe to state changes and log the updated state
-const unsubscribe = transferState.subscribe((state) => {
-  console.log("State updated:", state);
+type Rover = {
+    planet: string;
+    name: string;
+    days: number;
+    batteryCharge: number;
+    status: string;
+    weatherOutside: string;
+    coordinates: Coordinates;
+};
+
+const planetState = createState<Planet>({
+    name: "Earth",
+    system: "Solar System",
+    satelites: [],
+    hasLife: true,
+    distance: 1_000_000,
+    averageTemperature: 15,
 });
 
-// Update the state to { speed: 50, info: "Transfer in progress" }
-transferState.update((state) => {
-  state.speed = 50;
-  state.info = "Transfer in progress";
+const planetStateUnsub = planetState.subscribe((state) => {
+    console.log("Planet state updated:", state);
 });
 
-// Get the current state
-const currentState = transferState.get();
-console.log("Current state:", currentState);
-
-// Unsubscribe from state updates
-unsubscribe();
-
-// Subscribe to state changes, but only log the updated state if the error
-transferState.subscribe(
-  (state) => {
-    console.log("An error occurred:", state.error);
-  },
-  {
-    notifyCondition: (state) => {
-      state.error !== undefined;
+const planetStateDistanceUnsub = planetState.subscribe(
+    (state) => {
+        console.log("Planet state distance updated:", state.distance);
     },
-  },
+    {
+        properties: ["distance"],
+    },
 );
 
-// Set (create new object and replace old) the state to { speed: 0, info: "Ooops...", error: "Internet connection" }
-transferState.set({
-  speed: 0;
-  info: "Ooops...",
-  error: Internet connection,
+planetState.update((state) => {
+    state.satelites.push("Moon"); // <-- This will not trigger the planet state distance subscription
 });
 
-// Get the active subscribers count
-console.log("Active subscribers count:", transferState.getActiveSubscribersCount());
+// --> Planet state updated: { name: 'Earth', system: 'Solar System', satelites: ["Moon"], hasLife: true, distance: 1000000 }
 
-// Remove all subscribers
-transferState.unsubscribeAll();
+planetState.update((state) => {
+    state.distance = 224_000_900; // <-- This will trigger the planet state distance subscription
+});
 
-// Get the active subscribers count after unsubscribe
-console.log("Active subscribers count after unsubscribe:", transferState.getActiveSubscribersCount());
+// --> Planet state updated: { name: 'Earth', system: 'Solar System', satelites: ["Moon"], hasLife: true, distance: 224000900 }
+// --> Planet state distance updated: 224000900
 
-// Output:
-// "State updated: { speed: 50, info: "Transfer in progress" }"
-// "Current state: { speed: 50, info: "Transfer in progress" }"
-// "An error occurred: "Internet connection""
-// "Active subscribers count: 1"
-// "Active subscribers count after unsubscribe: 0"
+planetState.set({
+    name: "Mars",
+    system: "Solar System",
+    satelites: ["Phobos", "Deimos"],
+    hasLife: false,
+    distance: 100,
+    averageTemperature: -63,
+}); // <-- This will trigger both planet state distance and planet state subscription
+
+// --> Planet state updated: { name: 'Mars', system: 'Solar System', satelites: ["Phobos", "Deimos"], hasLife: false, distance: 100, averageTemperature: -63 }
+// --> Planet state distance updated: 100
+
+planetStateUnsub(); // <-- Unsubscribe from planet state
+planetStateDistanceUnsub(); // <-- Unsubscribe from planet state distance
+
+const marsExplorerState = createState<Rover>({
+    planet: "Mars",
+    name: "MarsExplorer",
+    days: 0,
+    batteryCharge: 100,
+    status: "On the way",
+    weatherOutside: "unknown",
+    coordinates: {
+        latitude: 0,
+        longitude: 0,
+    },
+});
+
+function generateReport(state: StatemanjsAPI<Rover>): string {
+    return `Rover report state updated. My status is ${
+        state.get().status
+    }. I'm on day ${state.get().days}. My battery charge is ${
+        state.get().batteryCharge
+    }. Weather outside is ${state.get().weatherOutside}. My coordinates are ${
+        state.get().coordinates.latitude
+    }, ${state.get().coordinates.longitude}.
+    My coordinates are: lat ${state.get().coordinates.latitude}, long ${
+        state.get().coordinates.longitude
+    }.
+    The weather outside is: ${state.get().weatherOutside}.`;
+}
+
+const marsExplorerDaysState = marsExplorerState.createSelector(
+    (state) => state.days,
+);
+
+marsExplorerDaysState.subscribe((state) => {
+    console.log("MarsExplorer Days state updated:", state);
+});
+
+const marsExplorerReportState = createComputedState<string>((): string => {
+    return generateReport(marsExplorerState);
+}, [marsExplorerState]); // <-- State of report. Generate mars explorer report state every MarsExplorerState change
+
+marsExplorerReportState.subscribe((state) => {
+    console.log(state);
+});
+
+marsExplorerState.set({
+    planet: "Mars",
+    name: "MarsExplorer",
+    days: 10,
+    batteryCharge: 85,
+    status: "Active",
+    weatherOutside: "Sunny",
+    coordinates: {
+        latitude: 4.5,
+        longitude: 137.4,
+    },
+});
+
+// --> Rover report state updated. My status is Active. I'm on day 10. My battery charge is 85. Weather outside is Sunny.
+// --> MarsExplorer Days state updated: 10
+
+marsExplorerState.subscribe(
+    () => {
+        charge(marsExplorerState);
+    },
+    { notifyCondition: (s): boolean => s.batteryCharge < 10 },
+);
+
+function charge(roverState: StatemanjsAPI<Rover>) {
+    roverState.asyncAction(async (state: StatemanjsAPI<Rover>) => {
+        console.log("Charging the rover...");
+
+        await new Promise((resolve) => setTimeout(resolve, 10000));
+
+        state.update((state) => {
+            state.batteryCharge = 100;
+        });
+    });
+}
+
+marsExplorerState.set({
+    planet: "Mars",
+    name: "MarsExplorer",
+    days: 8,
+    batteryCharge: 0,
+    status: "Inactive",
+    weatherOutside: "Sunny",
+    coordinates: {
+        latitude: -14.6,
+        longitude: 130.7,
+    },
+});
+
+// --> Charging the rover...
+
+// 10s waiting
+
+// --> Rover report state updated. My status is Inactive. I'm on day 8. My battery charge is 100. Weather outside is Sunny.
 ```
 
 # Table of Contents
@@ -82,6 +191,8 @@ console.log("Active subscribers count after unsubscribe:", transferState.getActi
     -   [State change](#state-change)
     -   [Unwrap](#unwrap)
     -   [Computed state](#computed-state)
+    -   [Selectors](#selectors)
+    -   [Async actions](#async-actions)
 -   [Performance test](#performance-test)
     -   [Fill case.](#fill-case)
 -   [Integrations](#integrations)
@@ -101,7 +212,7 @@ Key features:
 -   Support for any data type as a state: Statemanjs can handle any data type as a state, including primitives, complex objects, and multidimensional arrays.
 -   Framework-agnostic: Statemanjs can be used on its own without any additional packages, but it also has additional packages available for popular front-end frameworks such as React, Vue and Svelte.
 -   TypeScript support: Statemanjs is written in TypeScript, which means it has excellent support for type checking and type inference.
--   Small size: Statemanjs has a tiny size of just 80.4 KB, making it easy to include in your project without adding unnecessary bloat.
+-   Small size: Statemanjs has a tiny size of only less than 100KB, making it easy to include in your project without being too big.
 
 # API
 
@@ -115,7 +226,7 @@ createState<T>(element: T): StatemanjsAPI<T>;
 `StatemanjsAPI<T>`
 
 ```ts
-/**
+ /**
  * Accepts a new state and compares it with the current one.
  * Nothing will happen if the passed value is equal to the current one.
  * @param newState New state.
@@ -158,13 +269,30 @@ getActiveSubscribersCount(): number;
  * Flexible state update.
  * @param updateCb Callback for state updates.
  */
-update(updateCb: UpdateCb<T>): void;
+update(updateCb: UpdateCb<T>, currentState?: T): void;
 
 /**
  * Unwrap a proxy object to a regular JavaScript object
  * @returns unwrapped state
  */
 unwrap(): T;
+
+/**
+ * Dispatch an async action
+ * @param action An async action. It accepts a stateManager object,
+ * which is used to access the current state.
+ * @returns Promise.
+ */
+asyncAction(
+    action: (stateManager: StatemanjsAPI<T>) => Promise<void>,
+): Promise<void>;
+
+/**
+ * Create a computed state for a state property.
+ * @param selectorFn A function that returns a value of a state property.
+ * @returns A computed state.
+ */
+createSelector<E>(selectorFn: (state: T) => E): StatemanjsComputedAPI<E>;
 ```
 
 The `createComputedState` method is used to create a computed state:
@@ -179,11 +307,13 @@ createComputedState<T>(callback: () => T, deps: (StatemanjsAPI<any> | Statemanjs
 /** Get current state */
 get(): T;
 /**
- * State change subscription method.
- * Accepts the callback function (subscription callback),
- * which will be called on each update, and the subscription parameter object.
+ * The method of subscribing to the status change.
+ * Accepts a callback function (subscription callback),
+ * which will be called at each update, and a subscription options object.
  * In the options, you can specify information about the subscription,
- * as well as specify the condition under which the subscriber will be notified.
+ * as well as specify the condition under which the subscriber will be notified
+ * and mark the subscriber as protected. All subscribers are unprotected by default.
+ * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
  * Returns the unsubscribe callback function.
  *
  * @param subscriptionCb A function that runs on every update.
@@ -195,7 +325,7 @@ subscribe(
     subscriptionOptions?: SubscriptionOptions<T>,
 ): UnsubscribeCb;
 
-/** Remove all subscribers */
+/** Remove all unprotected subscribers */
 unsubscribeAll(): void;
 
 /**
@@ -305,6 +435,30 @@ counterState.subscribe(
 );
 ```
 
+You can specify which properties you want the subscriber to be notified when they change (at least one). If none of the properties have been changed, the subscriber will not be notified. Note that the `set` method always replaces the state, so use the `update` method to observe the properties correctly. Set is set.
+
+````js
+const userState = createState({
+    name: "Jake",
+    surname: "Dog",
+    info: { hobbies: [] },
+});
+
+userState.subscribe(
+    (state) => {
+        console.log(`The name has been changed: ${state.name}`);
+    },
+    { properties: ["name"] },
+);
+
+userState.subscribe(
+    (state) => {
+        console.log(`Hobbies have been changed: ${state.info.hobbies.join(", ")}`);
+    },
+    { properties: ["info.hobbies"] },
+);
+```
+
 The `subscribe` method returns a callback to unsubscribe.
 
 ```js
@@ -319,7 +473,7 @@ const unsub = counterState.subscribe(
 
 // cancel subscribe
 unsub();
-```
+````
 
 To unsubscribe all active and unprotected subscriptions from a state, use the `unsubscribeAll` method;
 
@@ -422,6 +576,45 @@ const statusComputedState = createComputedState<string>((): string => {
         ? "Houston, we have a problem"
         : "Houston, everything is fine";
 }, [problemState]);
+```
+
+## Selectors
+
+You can create a selector for a state object to track changes only to it. A selector is a computed state, but only for the current state and its property.
+
+```js
+const state = createState({ count: 0, value: 42 });
+
+state.subscribe((newState) => {
+    console.log("State changed:", newState);
+});
+
+const countSelector = state.createSelector(
+    (currentState) => currentState.count,
+);
+countSelector.subscribe((newCount) => {
+    console.log("Count changed:", newCount);
+});
+```
+
+## Async actions
+
+If you need to change state asynchronously, for example to set data from an api call, you can use the `asyncAction` method. It takes a callback function with a state instance as a parameter.
+
+```js
+const state = createState({ count: 0, value: 0 });
+
+state.subscribe((newState) => {
+    console.log("State changed:", newState);
+});
+
+state.asyncAction(async (stateManager) => {
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
+    stateManager.update((s) => {
+        s.count++;
+    });
+});
 ```
 
 # Performance test

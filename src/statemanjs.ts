@@ -6,8 +6,9 @@ import {
     UnsubscribeCb,
     UpdateCb,
     Subscriber,
-    SubscriptionOptions,
     StatemanjsComputedAPI,
+    SubscriptionOptions,
+    ActionKind,
 } from "./entities";
 import { formatError, getErrorMessage } from "./helpers";
 
@@ -39,7 +40,20 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         this.allowUnwrap = this.allowUnwrap.bind(this);
         this.denyUnwrap = this.denyUnwrap.bind(this);
         this.getIsUnwrapAllowed = this.getIsUnwrapAllowed.bind(this);
+        this.addPathToChangedProperty =
+            this.addPathToChangedProperty.bind(this);
+        this.getPathToChangedProperty =
+            this.getPathToChangedProperty.bind(this);
+        this.resetPathToChangedProperty =
+            this.resetPathToChangedProperty.bind(this);
+        this.setAcionKindToSet = this.setAcionKindToSet.bind(this);
+        this.setAcionKindToUpdate = this.setAcionKindToUpdate.bind(this);
+        this.setAcionKindToNone = this.setAcionKindToNone.bind(this);
     }
+
+    isNeedToCheckProperties = false;
+
+    acionKind: ActionKind = "none";
 
     /** All active subscribers. */
     activeSubscribers: Subscriber[] = [];
@@ -81,6 +95,20 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         "splice", // (Array)
     ];
 
+    pathToChangedProperty: string[] = [];
+
+    addPathToChangedProperty(path: string): void {
+        this.pathToChangedProperty.push(path);
+    }
+
+    getPathToChangedProperty(): string[] {
+        return this.pathToChangedProperty;
+    }
+
+    resetPathToChangedProperty(): void {
+        this.pathToChangedProperty = [];
+    }
+
     /** The state has been changed. */
     setWasChangedToTrue(): void {
         this.wasChanged = true;
@@ -113,15 +141,16 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
      * Returns an error if a forbidden method was used
      * or the state element was accessed directly otherwise returns element of state.
      */
-    checkAccessKind(target: any, prop: any): any {
+    checkAccessKind(target: any, prop: any, path: string[]): any {
         if (typeof target[prop] === "function") {
             // Check danger methods
             if (this.dangerMethods.includes(prop)) {
                 if (this.getIsAccessToStateAllowed()) {
                     this.setWasChangedToTrue();
+                    const newPath = path.concat(prop);
                     return new Proxy(
                         this.saveSlots(target, prop),
-                        this.handler(this),
+                        this.handler(this, newPath),
                     );
                 } else {
                     throw new Error(
@@ -132,10 +161,11 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
                 if (this.getIsUnwrapAllowed()) {
                     return this.saveSlots(target, prop);
                 }
+                const newPath = path.concat(prop);
 
                 return new Proxy(
                     this.saveSlots(target, prop),
-                    this.handler(this),
+                    this.handler(this, newPath),
                 );
             }
         } else if (this.isObject(target[prop]) && target[prop] !== null) {
@@ -143,23 +173,42 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
                 return this.saveSlots(target, prop);
             }
 
-            return new Proxy(this.saveSlots(target, prop), this.handler(this));
+            const newPath = path.concat(prop);
+
+            return new Proxy(
+                this.saveSlots(target, prop),
+                this.handler(this, newPath),
+            );
         } else {
             return this.saveSlots(target, prop);
         }
     }
 
     /** Proxy handler. Intercepts all state actions and checks access status. */
-    handler(context: StatemanjsBaseAPI<T>): ProxyHandler<T> {
+    handler(context: StatemanjsBaseAPI<T>, path: string[]): ProxyHandler<T> {
         return {
             get(target: any, prop: any) {
-                return context.checkAccessKind(target, prop);
+                return context.checkAccessKind(target, prop, path);
             },
             set(target: any, prop: any, val: any): boolean {
                 if (context.getIsAccessToStateAllowed()) {
-                    if (target[prop] != val) {
+                    if (target[prop] !== val) {
                         context.setWasChangedToTrue();
                         target[prop] = val;
+
+                        if (
+                            context.isNeedToCheckProperties &&
+                            context.acionKind === "update"
+                        ) {
+                            const newPath = path
+                                .concat(prop)
+                                .filter((i) => i !== "__STATEMANJS_STATE__");
+                            const pathString = newPath.join(".");
+
+                            if (pathString.length) {
+                                context.addPathToChangedProperty(pathString);
+                            }
+                        }
                     }
 
                     return true;
@@ -181,7 +230,7 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
      * @returns Proxy handler.
      */
     createProxyHandler(): ProxyHandler<T> {
-        return this.handler(this);
+        return this.handler(this, []);
     }
 
     /**
@@ -333,6 +382,29 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
     isObject(entity: unknown): boolean {
         return typeof entity === "object";
     }
+
+    setAcionKindToSet(): void {
+        this.acionKind = "set";
+    }
+
+    setAcionKindToUpdate(): void {
+        this.acionKind = "update";
+    }
+
+    setAcionKindToNone(): void {
+        this.acionKind = "none";
+    }
+
+    isAnyPropertyPartOfAnyPath(properties: string[], paths: string[]): boolean {
+        for (let i = 0; i < properties.length; i++) {
+            for (let j = 0; j < paths.length; j++) {
+                if (paths[j].startsWith(properties[i])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
 
 function _createStatemanjsBase<T extends object>(): StatemanjsBaseAPI<T> {
@@ -377,6 +449,7 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
      */
     set(newState: E): boolean {
         try {
+            this.#baseApi.setAcionKindToSet();
             this.#baseApi.allowAccessToState();
             this.#proxiedState.__STATEMANJS_STATE__ = newState;
             this.#baseApi.denyAccessToState();
@@ -387,6 +460,9 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
 
             this.#baseApi.setWasChangedToFalse();
             this.#baseApi.runActiveSubscribersCb();
+            this.#baseApi.resetPathToChangedProperty();
+            this.#baseApi.setAcionKindToNone();
+
             return true;
         } catch (error) {
             throw new Error(
@@ -425,21 +501,62 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
 
         const notifyConditionCb = subscriptionOptions.notifyCondition;
 
+        if (
+            subscriptionOptions.properties &&
+            subscriptionOptions.properties.length > 0
+        ) {
+            this.#baseApi.isNeedToCheckProperties = true;
+        }
+
         this.#baseApi.addSubscriber({
             subId: subscriberId,
             subCb: () => subscriptionCb(this.get()),
-            notifyCondition:
-                notifyConditionCb !== undefined
-                    ? () => notifyConditionCb(this.get())
-                    : undefined,
+            notifyCondition: (): boolean => {
+                if (subscriptionOptions.properties) {
+                    if (!this.#baseApi.isObject(this.unwrap())) {
+                        throw new Error(
+                            "You can't add properties to track if your state is not an object",
+                        );
+                    }
+
+                    try {
+                        return this.#baseApi.isAnyPropertyPartOfAnyPath(
+                            subscriptionOptions.properties as string[],
+                            this.#baseApi.getPathToChangedProperty(),
+                        );
+                    } catch (error) {
+                        throw new Error(
+                            formatError(
+                                "An error occurred when accessing a property from the subscriptionOptions list",
+                                error,
+                            ),
+                        );
+                    }
+                }
+
+                return (
+                    notifyConditionCb === undefined ||
+                    notifyConditionCb(this.get())
+                );
+            },
             isProtected: subscriptionOptions.protect ?? false,
         });
 
-        return (): void => this.#baseApi.unsubscribeById(subscriberId);
+        return (): void => {
+            if (
+                !subscriptionOptions.properties ||
+                subscriptionOptions.properties.length === 0
+            ) {
+                this.#baseApi.isNeedToCheckProperties = false;
+            }
+
+            this.#baseApi.unsubscribeById(subscriberId);
+        };
     }
 
     /** Remove all unprotected subscribers */
     unsubscribeAll(): void {
+        this.#baseApi.isNeedToCheckProperties = false;
         this.#baseApi.unsubscribeAll();
     }
 
@@ -457,6 +574,7 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
      */
     update(updateCb: UpdateCb<E>): boolean {
         try {
+            this.#baseApi.setAcionKindToUpdate();
             this.#baseApi.allowAccessToState();
             updateCb(this.get());
             this.#baseApi.denyAccessToState();
@@ -467,6 +585,9 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
 
             this.#baseApi.setWasChangedToFalse();
             this.#baseApi.runActiveSubscribersCb();
+            this.#baseApi.resetPathToChangedProperty();
+            this.#baseApi.setAcionKindToNone();
+
             return true;
         } catch (error) {
             throw new Error(
@@ -485,6 +606,36 @@ class _Statemanjs<E> implements StatemanjsAPI<E> {
         this.#baseApi.denyUnwrap();
 
         return unwrapped;
+    }
+
+    /**
+     * Dispatch an async action
+     * @param action An async action. It accepts a stateManager object,
+     * which is used to access the current state.
+     * @returns Promise.
+     */
+    async asyncAction(
+        action: (stateManager: StatemanjsAPI<E>) => Promise<void>,
+    ): Promise<void> {
+        try {
+            await action(this);
+        } catch (error) {
+            throw new Error(
+                `An error occurred while dispatching the async action: ${
+                    (error as Error).message
+                }`,
+            );
+        }
+    }
+
+    /**
+     * Create a computed state for a state property.
+     * @param selectorFn A function that returns a value of a state property.
+     * @returns A computed state.
+     */
+    createSelector<T>(selectorFn: (state: E) => T): StatemanjsComputedAPI<T> {
+        const selector = (): T => selectorFn(this.get());
+        return createComputedState<T>(selector, [this]);
     }
 }
 

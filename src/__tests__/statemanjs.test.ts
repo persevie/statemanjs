@@ -1,4 +1,9 @@
-import { createComputedState, createState } from "../index";
+import {
+    StatemanjsAPI,
+    StatemanjsComputedAPI,
+    createComputedState,
+    createState,
+} from "../index";
 
 type Moon = {
     name: string;
@@ -237,6 +242,158 @@ describe("Statemanjs API", () => {
         unwrappedPlanet.moons[0].name = "Moon"; // fix typo
 
         expect(unwrappedPlanet.moons[0].name).toBe("Moon");
+    });
+
+    test("it should not notify by props changing (set is set, not update)", () => {
+        const shuttleState = createState({
+            speed: 1000,
+            exitManeuverDistance: 20000,
+            startPreparingForManeuver: false,
+        });
+
+        let countOfNotifications = 0;
+
+        shuttleState.subscribe(
+            () => {
+                countOfNotifications = countOfNotifications + 1;
+            },
+            { properties: ["startPreparingForManeuver"] },
+        );
+
+        shuttleState.set({
+            speed: 1500,
+            exitManeuverDistance: 18500,
+            startPreparingForManeuver: false,
+        });
+
+        shuttleState.set({
+            speed: 1700,
+            exitManeuverDistance: 16800,
+            startPreparingForManeuver: false,
+        });
+
+        shuttleState.set({
+            speed: 2800,
+            exitManeuverDistance: 15000,
+            startPreparingForManeuver: false,
+        });
+
+        shuttleState.set({
+            speed: 2800,
+            exitManeuverDistance: 15000,
+            startPreparingForManeuver: true,
+        });
+
+        expect(countOfNotifications).toBe(0);
+    });
+
+    test("it should notify only by props changing (update)", () => {
+        const shuttleState = createState({
+            speed: 1000,
+            exitManeuverDistance: 20000,
+            startPreparingForManeuver: false,
+        });
+
+        let countOfNotifications = 0;
+
+        shuttleState.subscribe(
+            () => {
+                countOfNotifications = countOfNotifications + 1;
+            },
+            { properties: ["startPreparingForManeuver"] },
+        );
+
+        shuttleState.update((s) => {
+            s.speed = 1500;
+            s.exitManeuverDistance = 18500;
+        }, shuttleState.unwrap());
+
+        shuttleState.update((s) => {
+            s.speed = 1700;
+            s.exitManeuverDistance = 16800;
+        }, shuttleState.unwrap());
+
+        shuttleState.update((s) => {
+            s.speed = 2800;
+            s.exitManeuverDistance = 15000;
+        }, shuttleState.unwrap());
+
+        expect(countOfNotifications).toBe(0);
+
+        shuttleState.update((s) => {
+            s.startPreparingForManeuver = true;
+        }, shuttleState.unwrap());
+
+        expect(countOfNotifications).toBe(1);
+    });
+
+    test("it should async set new state", async () => {
+        const planetState = createState<Planet | null>(null);
+
+        const asyncAction = async (
+            stateManager: StatemanjsAPI<Planet | null>,
+        ) => {
+            return new Promise<void>((resolve) => {
+                setTimeout(() => {
+                    stateManager.set({
+                        name: "Mars",
+                        system: "Solar system",
+                        moons: [{ name: "Phobos" }],
+                    });
+                    resolve();
+                }, 100);
+            });
+        };
+
+        await planetState.asyncAction(asyncAction);
+        expect(planetState.get()).not.toBeNull();
+        expect(planetState.get()).toMatchObject({
+            name: "Mars",
+            system: "Solar system",
+            moons: [{ name: "Phobos" }],
+        });
+    });
+
+    test("it should update selector", () => {
+        const planetState = createState<Planet>({
+            name: "Mars",
+            system: "Solar system",
+            moons: [],
+        });
+
+        const planetNameSelector = (state: Planet) => state.name;
+
+        const planetName: StatemanjsComputedAPI<string> =
+            planetState.createSelector(planetNameSelector);
+
+        expect(planetName.get()).toBe("Mars");
+
+        let count = 0;
+
+        planetName.subscribe(() => {
+            count++;
+        });
+
+        planetState.set({
+            ...planetState.get(),
+            ...{ moons: [{ name: "Phobos" }] },
+        });
+
+        expect(count).toBe(0);
+        expect(planetState.get()).toMatchObject({
+            name: "Mars",
+            system: "Solar system",
+            moons: [{ name: "Phobos" }],
+        });
+
+        planetState.set({
+            name: "Earth",
+            system: "Solar system",
+            moons: [{ name: "Moon" }],
+        });
+
+        expect(count).toBe(1);
+        expect(planetName.get()).toBe("Earth");
     });
 });
 
