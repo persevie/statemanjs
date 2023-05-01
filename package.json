@@ -1,6 +1,6 @@
 {
     "name": "@persevie/statemanjs",
-    "version": "1.4.1",
+    "version": "1.5.0",
     "description": "Proper state manager for JavaScript",
     "main": "statemanjs.js",
     "module": "statemanjs.mjs",
