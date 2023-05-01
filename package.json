@@ -71,6 +71,6 @@
         "typescript": "^4.7.3"
     },
     "peerDependencies": {
-        "@persevie/statemanjs": "^1.3.6"
+        "@persevie/statemanjs": "^1.5.1"
     }
 }
