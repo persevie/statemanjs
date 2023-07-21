@@ -1,3 +1,4 @@
+import { formatError } from "../helpers";
 import {
     StatemanjsAPI,
     StatemanjsComputedAPI,
@@ -820,6 +821,17 @@ describe("Statemanjs computed API", () => {
 
         expect(statusComputedState.get()).toEqual(
             "Houston, everything is fine",
+        );
+    });
+});
+
+describe("Utils", () => {
+    test("It should format error", () => {
+        const description = "test";
+        const errorMsg = "test message";
+
+        expect(formatError(description, new Error(errorMsg))).toEqual(
+            `${description}: ${errorMsg}`,
         );
     });
 });
