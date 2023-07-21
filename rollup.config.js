@@ -1,13 +1,13 @@
-import dts from "rollup-plugin-dts";
-import esbuild from "rollup-plugin-esbuild";
-import { terser } from "rollup-plugin-terser";
-import bundleSize from "rollup-plugin-bundle-size";
-import copy from "rollup-plugin-copy";
+const dts = require("rollup-plugin-dts").default;
+const esbuild = require("rollup-plugin-esbuild").default;
+const terser = require("@rollup/plugin-terser");
+const bundleSize = require("rollup-plugin-bundle-size");
+const copy = require("rollup-plugin-copy");
 
 const outDir = "package";
 const name = "statemanjs";
 
-export default [
+module.exports = [
     {
         input: "src/index.ts",
         external: (id) => !/^[./]/.test(id),
