@@ -1,69 +1,44 @@
 {
-    "name": "@persevie/statemanjs",
-    "version": "1.5.1",
-    "description": "Proper state manager for JavaScript",
-    "main": "statemanjs.js",
-    "module": "statemanjs.mjs",
-    "typings": "statemanjs.d.ts",
-    "license": "MIT",
-    "repository": "https://github.com/persevie/statemanjs",
-    "bugs": "https://github.com/persevie/statemanjs/issues",
-    "publishConfig": {
-        "access": "public"
-    },
-    "files": [
-        "README.md",
-        "LICENSE",
-        "statemanjs.js",
-        "statemanjs.mjs",
-        "statemanjs.d.ts",
-        "statemanjs.js.map",
-        "statemanjs.mjs.map"
-    ],
-    "keywords": [
-        "javascript",
-        "state management",
-        "state manager",
-        "state",
-        "store"
-    ],
-    "author": "Dmitry Shatokhin <dmtrshatokhin@gmail.com> (https://github.com/dmtrshat)",
-    "scripts": {
-        "test": "jest --config=jest.config.ts",
-        "build": "rollup -c && node ./scripts/createDistPackageJson.js",
-        "lint": "eslint './src/**/*.ts' --fix",
-        "prepare": "husky install"
-    },
-    "lint-staged": {
-        "**/*.ts": [
-            "prettier --write",
-            "eslint --fix"
-        ]
-    },
-    "devDependencies": {
-        "@rollup/plugin-terser": "^0.4.3",
-        "@types/jest": "^29.5.3",
-        "@types/node": "^20.4.2",
-        "@typescript-eslint/eslint-plugin": "^6.1.0",
-        "@typescript-eslint/parser": "^6.1.0",
-        "esbuild": "^0.18.15",
-        "eslint": "^8.45.0",
-        "eslint-config-prettier": "^8.8.0",
-        "eslint-plugin-import": "^2.27.5",
-        "eslint-plugin-prettier": "^5.0.0",
-        "husky": "^8.0.3",
-        "jest": "^29.6.1",
-        "jest-environment-jsdom": "^29.6.1",
-        "lint-staged": "^13.2.3",
-        "prettier": "^3.0.0",
-        "prettier-eslint": "^15.0.1",
-        "rollup": "^3.26.3",
-        "rollup-plugin-bundle-size": "^1.0.3",
-        "rollup-plugin-copy": "^3.4.0",
-        "rollup-plugin-dts": "^5.3.0",
-        "rollup-plugin-esbuild": "^5.0.0",
-        "ts-jest": "^29.1.1",
-        "ts-node": "^10.9.1",
-        "typescript": "^5.1.6"
-    }
+  "name": "root",
+  "private": true,
+  "lint-staged": {
+    "**/*.ts": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  },
+  "scripts": {
+    "prepare": "husky install",
+    "test:statemanjs": "jest --config=./packages/statemanjs/jest.config.ts"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "devDependencies": {
+    "lerna": "^7.1.4",
+    "@rollup/plugin-terser": "^0.4.3",
+    "rollup": "^3.26.3",
+    "rollup-plugin-bundle-size": "^1.0.3",
+    "rollup-plugin-copy": "^3.4.0",
+    "rollup-plugin-dts": "^5.3.0",
+    "rollup-plugin-esbuild": "^5.0.0",
+    "@types/jest": "^29.5.3",
+    "@types/node": "^20.4.2",
+    "@typescript-eslint/eslint-plugin": "^6.1.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "esbuild": "^0.18.15",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^8.0.3",
+    "jest": "^29.6.1",
+    "jest-environment-jsdom": "^29.6.1",
+    "lint-staged": "^13.2.3",
+    "prettier": "^3.0.0",
+    "prettier-eslint": "^15.0.1",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
+  }
 }

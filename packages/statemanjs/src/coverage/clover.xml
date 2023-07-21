@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1689970559065" clover="3.2.0">
-  <project timestamp="1689970559065" name="All files">
+<coverage generated="1689980157741" clover="3.2.0">
+  <project timestamp="1689980157741" name="All files">
     <metrics statements="223" coveredstatements="198" conditionals="48" coveredconditionals="39" methods="71" coveredmethods="62" elements="342" coveredelements="299" complexity="0" loc="223" ncloc="223" packages="1" files="3" classes="3"/>
-    <file name="helpers.ts" path="/Users/dmtrshat/Dev/Private/statemanjs/src/helpers.ts">
+    <file name="helpers.ts" path="/Users/dmtrshat/Dev/Private/statemanjs/packages/statemanjs/src/helpers.ts">
       <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="2"/>
       <line num="9" count="1" type="stmt"/>
       <line num="13" count="2" type="stmt"/>
       <line num="16" count="1" type="stmt"/>
     </file>
-    <file name="index.ts" path="/Users/dmtrshat/Dev/Private/statemanjs/src/index.ts">
+    <file name="index.ts" path="/Users/dmtrshat/Dev/Private/statemanjs/packages/statemanjs/src/index.ts">
       <metrics statements="2" coveredstatements="2" conditionals="0" coveredconditionals="0" methods="2" coveredmethods="2"/>
       <line num="1" count="1" type="stmt"/>
       <line num="8" count="46" type="stmt"/>
     </file>
-    <file name="statemanjs.ts" path="/Users/dmtrshat/Dev/Private/statemanjs/src/statemanjs.ts">
+    <file name="statemanjs.ts" path="/Users/dmtrshat/Dev/Private/statemanjs/packages/statemanjs/src/statemanjs.ts">
       <metrics statements="218" coveredstatements="193" conditionals="48" coveredconditionals="39" methods="67" coveredmethods="58"/>
       <line num="13" count="1" type="stmt"/>
       <line num="18" count="48" type="stmt"/>

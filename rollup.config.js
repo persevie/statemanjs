@@ -4,8 +4,14 @@ const terser = require("@rollup/plugin-terser");
 const bundleSize = require("rollup-plugin-bundle-size");
 const copy = require("rollup-plugin-copy");
 
-const outDir = "package";
-const name = "statemanjs";
+const packageName = process.env.PACKAGE_NAME;
+
+if (!packageName) {
+    console.error("No package name provided");
+    process.exit(1);
+}
+
+const outDir = "publish";
 
 module.exports = [
     {
@@ -13,14 +19,14 @@ module.exports = [
         external: (id) => !/^[./]/.test(id),
         output: [
             {
-                file: `${outDir}/${name}.js`,
+                file: `${outDir}/${packageName}.js`,
                 format: "cjs",
                 exports: "auto",
                 plugins: [terser()],
                 sourcemap: true,
             },
             {
-                file: `${outDir}/${name}.mjs`,
+                file: `${outDir}/${packageName}.mjs`,
                 format: "es",
                 exports: "auto",
                 plugins: [terser()],
@@ -33,16 +39,12 @@ module.exports = [
             copy({
                 targets: [
                     {
-                        src: "./LICENSE",
-                        dest: "package",
+                        src: "../../LICENSE",
+                        dest: outDir,
                     },
                     {
-                        src: "./README.md",
-                        dest: "package",
-                    },
-                    {
-                        src: "./assets",
-                        dest: "package",
+                        src: "../../README.md",
+                        dest: outDir,
                     },
                 ],
             }),
@@ -51,7 +53,7 @@ module.exports = [
     {
         plugins: [dts()],
         output: {
-            file: `${outDir}/${name}.d.ts`,
+            file: `${outDir}/${packageName}.d.ts`,
             format: "es",
             exports: "default",
         },
