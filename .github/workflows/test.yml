@@ -1,28 +1,35 @@
 name: Quality test
 
 on:
-    push:
-        branches:
-            - "**"
-    pull_request:
-        branches:
-            - "**"
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - "**"
 
 jobs:
-    quality:
-        runs-on: ${{ matrix.os }}
+  quality:
+    runs-on: ${{ matrix.os }}
 
-        strategy:
-            fail-fast: true
-            matrix:
-                node-version: [lts/*, current]
-                os: [ubuntu-latest]
+    strategy:
+      fail-fast: true
+      matrix:
+        node-version: [lts/*, current]
+        os: [ubuntu-latest]
 
-        steps:
-            - uses: actions/checkout@v3
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v3
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm ci
-            - run: npx lerna run test
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+            node-version: ${{ matrix.node-version }}
+
+      - run: npm ci
+      - run: npx lerna run test
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v3
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
