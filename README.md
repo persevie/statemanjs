@@ -2,6 +2,8 @@
 <img height="60" alt="Statemanjs logo" src="./assets/stateman-js-logo-full.png">
 </p>
 
+[![codecov](https://codecov.io/gh/persevie/statemanjs/branch/main/graph/badge.svg?token=5NICXEETTY)](https://codecov.io/gh/persevie/statemanjs)
+
 ```ts
 import { createState, createComputedState } from "@persevie/statemanjs";
 
