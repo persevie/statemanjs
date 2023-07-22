@@ -1,19 +1,19 @@
 # Contributing
 
-First off, thank you for considering contributing to statemanjs-react 🤗
+First off, thank you for considering contributing to statemanjs 🤗
 
 ## Where do I go from here?
 
-If you've noticed a bug or have a feature request - please check whether the same issue already exists in the [list of issues](https://github.com/persevie/statemanjs-react/issues). If you don't find the issue there, [create a new one](https://github.com/persevie/statemanjs-react/issues/new/choose)!
+If you've noticed a bug or have a feature request - please check whether the same issue already exists in the [list of issues](https://github.com/persevie/statemanjs/issues). If you don't find the issue there, [create a new one](https://github.com/persevie/statemanjs/issues/new/choose)!
 It's generally best if you get confirmation of your bug or approval for your feature request this way before starting to code.
 
 The issue tracker is only for bugs and feature requests.
 
-If you have general questions about statemanjs-react, or if you want to discuss the project and get involved in its future, we invite you to [Discussions](https://github.com/persevie/statemanjs-react/discussions).
+If you have general questions about statemanjs, or if you want to discuss the project and get involved in its future, we invite you to [Discussions](https://github.com/persevie/statemanjs/discussions).
 
 ## Fork & create a branch
 
-If this is something you think you can fix, then [fork statemanjs-react](https://github.com/persevie/statemanjs-react/fork) and create
+If this is something you think you can fix, then [fork statemanjs](https://github.com/persevie/statemanjs/fork) and create
 a branch with a descriptive name.
 
 A good branch name would be (where issue #123 is the ticket you're working on):
@@ -28,7 +28,7 @@ Your code should follow the same conventions and pass the same code quality chec
 
 ## Sending a Pull Request
 
-1. Add the main repository for the `statemanjs-react` library as a remote repository with the name `upstream`.
+1. Add the main repository for the `statemanjs` library as a remote repository with the name `upstream`.
 2. Install dependencies for development.
 3. Fetch the latest changes.
 4. Make changes.

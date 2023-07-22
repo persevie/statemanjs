@@ -1,26 +1,32 @@
-import dts from "rollup-plugin-dts";
-import esbuild from "rollup-plugin-esbuild";
-import { terser } from "rollup-plugin-terser";
-import bundleSize from "rollup-plugin-bundle-size";
-import copy from "rollup-plugin-copy";
+const dts = require("rollup-plugin-dts").default;
+const esbuild = require("rollup-plugin-esbuild").default;
+const terser = require("@rollup/plugin-terser");
+const bundleSize = require("rollup-plugin-bundle-size");
+const copy = require("rollup-plugin-copy");
 
-const outDir = "package";
-const name = "statemanjs-react";
+const packageName = process.env.PACKAGE_NAME;
 
-export default [
+if (!packageName) {
+    console.error("No package name provided");
+    process.exit(1);
+}
+
+const outDir = "publish";
+
+module.exports = [
     {
         input: "src/index.ts",
         external: (id) => !/^[./]/.test(id),
         output: [
             {
-                file: `${outDir}/${name}.js`,
+                file: `${outDir}/${packageName}.js`,
                 format: "cjs",
                 exports: "auto",
                 plugins: [terser()],
                 sourcemap: true,
             },
             {
-                file: `${outDir}/${name}.mjs`,
+                file: `${outDir}/${packageName}.mjs`,
                 format: "es",
                 exports: "auto",
                 plugins: [terser()],
@@ -33,16 +39,12 @@ export default [
             copy({
                 targets: [
                     {
-                        src: "./LICENSE",
-                        dest: "package",
+                        src: "../../LICENSE",
+                        dest: outDir,
                     },
                     {
-                        src: "./README.md",
-                        dest: "package",
-                    },
-                    {
-                        src: "./assets",
-                        dest: "package",
+                        src: "../../README.md",
+                        dest: outDir,
                     },
                 ],
             }),
@@ -51,7 +53,7 @@ export default [
     {
         plugins: [dts()],
         output: {
-            file: `${outDir}/${name}.d.ts`,
+            file: `${outDir}/${packageName}.d.ts`,
             format: "es",
             exports: "default",
         },

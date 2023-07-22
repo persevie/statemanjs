@@ -1,8 +1,18 @@
-const packageJson = require("../package.json");
 const fs = require("fs");
+const { cwd } = require("process");
+
+const packageJsonPath = process.argv[2];
+
+if (!packageJsonPath) {
+    console.error('No package.json path provided');
+    process.exit(1);
+}
+
+console.log(cwd())
+const packageJson = require(`${packageJsonPath}/package.json`);
 
 fs.writeFile(
-    "./package/package.json",
+    "./publish/package.json",
     JSON.stringify({
         name: packageJson.name,
         version: packageJson.version,
@@ -14,7 +24,6 @@ fs.writeFile(
         repository: packageJson.repository,
         bugs: packageJson.bugs,
         publishConfig: packageJson.publishConfig,
-        files: packageJson.files,
         keywords: packageJson.keywords,
         author: packageJson.author,
     }),
