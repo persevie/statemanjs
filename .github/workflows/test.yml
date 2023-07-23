@@ -24,12 +24,23 @@ jobs:
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
-            node-version: ${{ matrix.node-version }}
+          node-version: ${{ matrix.node-version }}
 
       - run: npm ci
-      - run: npx lerna run test
+      - run: npm run test:all
 
-      - name: Upload coverage reports to Codecov
+      - name: Upload coverage reports to Codecov - statemanjs
         uses: codecov/codecov-action@v3
+        with:
+          files: ./src/statemanjs/coverage/lcov.info
+          flags: statemanjs
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload coverage reports to Codecov - statemanjs-react
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./src/statemanjs-react/coverage/lcov.info
+          flags: statemanjs-react
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
