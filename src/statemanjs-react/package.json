@@ -1,6 +1,6 @@
 {
   "name": "statemanjs-react",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "The best way to interact with the state of your react application",
   "main": "statemanjs-react.js",
   "module": "statemanjs-react.mjs",
