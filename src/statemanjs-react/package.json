@@ -1,13 +1,13 @@
 {
   "name": "@persevie/statemanjs-react",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "The best way to interact with the state of your react application",
   "main": "statemanjs-react.js",
   "module": "statemanjs-react.mjs",
   "typings": "statemanjs-react.d.ts",
   "license": "MIT",
-  "repository": "https://github.com/dmtrshat/statemanjs",
-  "bugs": "https://github.com/dmtrshat/statemanjs/issues",
+  "repository": "https://github.com/persevie/statemanjs",
+  "bugs": "https://github.com/persevie/statemanjs/issues",
   "publishConfig": {
     "access": "public"
   },
