@@ -1,6 +1,6 @@
 {
     "name": "@persevie/statemanjs-vue",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "description": "Vue wrap over proper state manager for JavaScript",
     "main": "statemanjs-vue.js",
     "module": "statemanjs-vue.mjs",
