@@ -1,0 +1,29 @@
+{
+    "name": "@persevie/statemanjs",
+    "version": "1.5.6",
+    "description": "Proper state manager for JavaScript",
+    "main": "statemanjs.js",
+    "module": "statemanjs.mjs",
+    "typings": "statemanjs.d.ts",
+    "license": "MIT",
+    "repository": "https://github.com/persevie/statemanjs",
+    "bugs": "https://github.com/persevie/statemanjs/issues",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "statemanjs.js",
+        "statemanjs.mjs",
+        "statemanjs.d.ts",
+        "statemanjs.js.map",
+        "statemanjs.mjs.map"
+    ],
+    "keywords": [
+        "javascript",
+        "state management",
+        "state manager",
+        "state",
+        "store"
+    ],
+    "author": "Dmitry Shatokhin <dmtrshatokhin@gmail.com> (https://github.com/dmtrshat)"
+}

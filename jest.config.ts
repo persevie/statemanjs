@@ -5,6 +5,7 @@ const config: Config.InitialOptions = {
     transform: {
         "^.+\\.ts?$": "ts-jest",
     },
+    rootDir: "./src",
     testEnvironmentOptions: {
         customExportConditions: ["jsdom", "node", "node-addons"],
     },
@@ -17,6 +18,7 @@ const config: Config.InitialOptions = {
         "!**/vendor/**",
         "!**/package/**",
         "!**/coverage/**",
+        "!**/*.config.{js,ts}",
     ],
     coverageThreshold: {
         global: {

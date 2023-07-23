@@ -11,11 +11,11 @@ if (!packageName) {
     process.exit(1);
 }
 
-const outDir = "publish";
+const outDir = `packages/${packageName}`;
 
 module.exports = [
     {
-        input: "src/index.ts",
+        input: `src/${packageName}/index.ts`,
         external: (id) => !/^[./]/.test(id),
         output: [
             {
@@ -39,11 +39,11 @@ module.exports = [
             copy({
                 targets: [
                     {
-                        src: "../../LICENSE",
+                        src: "./LICENSE",
                         dest: outDir,
                     },
                     {
-                        src: "../../README.md",
+                        src: "./README.md",
                         dest: outDir,
                     },
                 ],
@@ -57,7 +57,7 @@ module.exports = [
             format: "es",
             exports: "default",
         },
-        input: "src/index.ts",
+        input: `src/${packageName}/index.ts`,
         external: (id) => !/^[./]/.test(id),
     },
 ];
