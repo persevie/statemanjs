@@ -33,6 +33,11 @@ function publish(moduleName) {
     execSync(`cd ./packages/${moduleName} && npm publish`, {
         stdio: "inherit",
     })
+
+    console.log(`Removing build ${moduleName}...`);
+    execSync(`rm -rf ./packages/${moduleName}`, {
+        stdio: "inherit",
+    })
 }
 
 getModuleNames()
