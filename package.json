@@ -21,7 +21,8 @@
         "publish:statemanjs": "node scripts/publish.js statemanjs",
         "publish:statemanjs-react": "node scripts/publish.js statemanjs-react",
         "publish:statemanjs-vue": "node scripts/publish.js statemanjs-vue",
-        "publish:statemanjs-solid": "node scripts/publish.js statemanjs-solid"
+        "publish:statemanjs-solid": "node scripts/publish.js statemanjs-solid",
+        "benchmark:fill": "sh benchmarks/scripts/fill/fill.sh"
     },
     "workspaces": [
         "packages/*"
@@ -35,6 +36,8 @@
         "@typescript-eslint/eslint-plugin": "^6.1.0",
         "@typescript-eslint/parser": "^6.1.0",
         "@vue/test-utils": "^2.4.1",
+        "commander": "^11.0.0",
+        "effector": "^22.8.6",
         "esbuild": "^0.18.15",
         "eslint": "^8.45.0",
         "eslint-config-prettier": "^8.8.0",
@@ -46,9 +49,11 @@
         "jest": "^29.6.1",
         "jest-environment-jsdom": "^29.6.1",
         "lint-staged": "^13.2.3",
+        "mobx": "^6.10.0",
         "prettier": "^3.0.0",
         "prettier-eslint": "^15.0.1",
         "react": "^18.2.0",
+        "redux": "^4.2.1",
         "rollup": "^3.26.3",
         "rollup-plugin-bundle-size": "^1.0.3",
         "rollup-plugin-copy": "^3.4.0",
