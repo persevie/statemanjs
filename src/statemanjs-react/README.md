@@ -1,3 +1,7 @@
+<p align="center">
+<img height="60" alt="Statemanjs logo" src="../../assets/stateman-js-logo-full.png">
+</p>
+
 Integration for React (functional components style) of [statemanjs](https://github.com/persevie/statemanjs).
 
 # Table of Contents
@@ -7,6 +11,7 @@ Integration for React (functional components style) of [statemanjs](https://gith
 
 -   [**API**](#api)
 -   [**Usage**](#usage)
+-   [**For contributors**](#for-contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -58,6 +63,8 @@ function Component() {
 }
 ```
 
----
+Detailed information about **statemanjs** can be found [here](https://github.com/persevie/statemanjs#readme).
 
-Thank you and good hacking 🤗
+# **For contributors**
+
+See [CONTRIBUTING.md](https://github.com/persevie/statemanjs/blob/main/CONTRIBUTING.md).

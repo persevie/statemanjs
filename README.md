@@ -626,7 +626,7 @@ state.asyncAction(async (stateManager) => {
 ### Fill case.
 
 One by one adds `n` elements to the array `x` times. Where `n` is a number from the array of numbers [1, 10, 100, 1000, 10000, 100000, 1000000, 2000000, 5000000, 10000000,
-50000000] ([countOfElements](https://github.com/dmtrshat/statemanjs-benchmarks/blob/main/cases/shared.mjs)), and `x` is the number of iterations (1 by default). If `n = 5; x = 2`, that means to add `5` elements `2` times. The `element` is an object `{foo: "bar", baz: "qux"}`. Between iterations the storage is reset (empty array).
+50000000] ([countOfElements](https://github.com/persevie/statemanjs/blob/main/benchmarks/cases/shared.mjs)), and `x` is the number of iterations (1 by default). If `n = 5; x = 2`, that means to add `5` elements `2` times. The `element` is an object `{foo: "bar", baz: "qux"}`. Between iterations the storage is reset (empty array).
 The average value for iterations is calculated and written as the result.
 
 Think of this case as a TODO list with a simple structure, e.g. `{title: string, notes: string}`.
@@ -634,7 +634,7 @@ Think of this case as a TODO list with a simple structure, e.g. `{title: string,
 The benchmark was run on a MacBook Pro m1 16gb.
 
 You can run the benchmarks on your computer. You can also add new benchmarks or modify existing ones.
-Read more about it [here](https://github.com/dmtrshat/statemanjs-benchmarks/blob/main/README.md).
+Read more about it [here](https://github.com/persevie/statemanjs/blob/main/benchmarks/README.md).
 
 Below is a table with the results of the **fill** benchmark.
 
@@ -738,9 +738,9 @@ This suggests that Statemanjs may be a good choice for state management in JavaS
 
 # Integrations
 
-Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](./src/statemanjs-react/README.md), [vue](https://github.com/persevie/statemanjs-vue), [solid](https://github.com/persevie/statemanjs-solid). Statemanjs supports svelte out of the box and doesn't need any additional packages.
+Statemanjs is framework agnostic and can be used without additional packages. But for convenience, there are packages for the most popular frameworks - [react](https://github.com/persevie/statemanjs/blob/main/src/statemanjs-react/README.md), [vue](https://github.com/persevie/statemanjs/blob/main/src/statemanjs-vue/README.md), [solid](https://github.com/persevie/statemanjs/blob/main/src/statemanjs-solid/README.md). Statemanjs supports svelte out of the box and doesn't need any additional packages.
 To work with additional packages, the main statemanjs package is required.
 
 # For contributors
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+See [CONTRIBUTING.md](https://github.com/persevie/statemanjs/blob/main/CONTRIBUTING.md).
