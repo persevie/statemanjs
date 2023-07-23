@@ -16,9 +16,11 @@ const config: Config.InitialOptions = {
         "**/*.{js,jsx,ts,tsx}",
         "!**/node_modules/**",
         "!**/vendor/**",
-        "!**/package/**",
+        "!**/packages/**",
         "!**/coverage/**",
         "!**/*.config.{js,ts}",
+        // TODO: add tests for solidjs and remove this line
+        "!src/statemanjs-solid/**",
     ],
     coverageThreshold: {
         global: {

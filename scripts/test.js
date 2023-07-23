@@ -9,10 +9,13 @@ if (!providedModuleName) {
 }
 
 function test(moduleName) {
-    console.log(`Testing ${moduleName}...`);
-    execSync(`jest --config=src/${moduleName}/jest.config.ts`, {
-        stdio: "inherit",
-    });
+    // TODO: add tests for solidjs and remove this 'if' condition
+    if (moduleName !== "statemanjs-solid") {
+        console.log(`Testing ${moduleName}...`);
+        execSync(`jest --config=src/${moduleName}/jest.config.ts`, {
+            stdio: "inherit",
+        });
+    }
 }
 
 getModuleNames()
