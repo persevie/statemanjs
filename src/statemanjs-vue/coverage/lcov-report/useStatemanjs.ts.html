@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for useStatemanjs.tsx</title>
+    <title>Code coverage report for useStatemanjs.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="prettify.css" />
     <link rel="stylesheet" href="base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="index.html">All files</a> useStatemanjs.tsx</h1>
+        <h1><a href="index.html">All files</a> useStatemanjs.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>1/1</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>2/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>7/7</span>
+                <span class='fraction'>9/9</span>
             </div>
         
             
@@ -95,7 +95,12 @@
 <a name='L30'></a><a href='#L30'>30</a>
 <a name='L31'></a><a href='#L31'>31</a>
 <a name='L32'></a><a href='#L32'>32</a>
-<a name='L33'></a><a href='#L33'>33</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">1x</span>
+<a name='L33'></a><a href='#L33'>33</a>
+<a name='L34'></a><a href='#L34'>34</a>
+<a name='L35'></a><a href='#L35'>35</a>
+<a name='L36'></a><a href='#L36'>36</a>
+<a name='L37'></a><a href='#L37'>37</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -115,27 +120,31 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { useState, useEffect } from "react";
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/* eslint-disable @typescript-eslint/no-explicit-any */
+import { getCurrentScope, onScopeDispose, ShallowRef, shallowRef } from "vue";
 import type {
     StatemanjsAPI,
-    SubscriptionOptions,
     StatemanjsComputedAPI,
+    SubscriptionOptions,
 } from "../statemanjs/index";
 &nbsp;
 /**
- * Make the react component observe the statemanjs.
+ * Make the vue component observe the statemanjs.
  * In the options, you can specify information about the observer,
  * as well as specify the condition under which the observer will be notified.
  *
@@ -146,16 +155,19 @@ import type {
 function useStatemanjs&lt;T&gt;(
     statemanjs: StatemanjsAPI&lt;T&gt; | StatemanjsComputedAPI&lt;T&gt;,
     subscriptionOptions: SubscriptionOptions&lt;T&gt; = {},
-): T {
-    const [_, forceRender] = useState({});
+): ShallowRef&lt;T&gt; {
+    const state = shallowRef();
+    state.value = statemanjs.get();
 &nbsp;
-    useEffect(() =&gt; {
-        return statemanjs.subscribe(() =&gt; {
-            forceRender({});
-        }, subscriptionOptions);
-    }, [statemanjs, subscriptionOptions]);
+    if (getCurrentScope()) {
+        const unsubscribe = statemanjs.subscribe((value) =&gt; {
+            state.value = value;
+        }, subscriptionOptions as any);
 &nbsp;
-    return statemanjs.get();
+        onScopeDispose(unsubscribe);
+    }
+&nbsp;
+    return state;
 }
 &nbsp;
 export { useStatemanjs };
@@ -166,7 +178,7 @@ export { useStatemanjs };
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2023-07-23T10:53:07.295Z
+                at 2023-07-23T11:01:38.887Z
             </div>
         <script src="prettify.js"></script>
         <script>
