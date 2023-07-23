@@ -1,4 +1,4 @@
-name: Quality test
+name: Run Tests
 
 on:
   push:
@@ -9,38 +9,25 @@ on:
       - "**"
 
 jobs:
-  quality:
-    runs-on: ${{ matrix.os }}
-
+  test:
+    runs-on: ubuntu-latest
     strategy:
-      fail-fast: true
       matrix:
         node-version: [lts/*, current]
-        os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v3
-
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-
       - run: npm ci
       - run: npm run test:all
 
-      - name: Upload coverage reports to Codecov - statemanjs
-        uses: codecov/codecov-action@v3
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v2
         with:
-          files: ./src/statemanjs/coverage/lcov.info
-          flags: statemanjs
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Upload coverage reports to Codecov - statemanjs-react
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./src/statemanjs-react/coverage/lcov.info
-          flags: statemanjs-react
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          name: code-coverage
+          path: |
+            src/statemanjs/coverage/lcov.info
+            src/statemanjs-react/coverage/lcov.info
