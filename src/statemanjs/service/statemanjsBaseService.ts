@@ -1,20 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-    StatemanjsAPI,
-    StatemanjsBaseAPI,
-    StateWrapper,
-    SubscriptionCb,
-    UnsubscribeCb,
-    UpdateCb,
-    Subscriber,
-    StatemanjsComputedAPI,
-    SubscriptionOptions,
-    ActionKind,
-} from "./entities";
-import { formatError, getErrorMessage } from "./helpers";
+import { StatemanjsBaseAPI } from "../api/statemanjsBaseAPI";
+import { StateWrapper, ActionKind, Subscriber } from "../entities";
+import { getErrorMessage } from "../utility";
 
-class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
-    constructor() {
+export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
+    constructor(element: T) {
         // Bindings
         this.handler = this.handler.bind(this);
         this.createProxyHandler = this.createProxyHandler.bind(this);
@@ -50,11 +40,23 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         this.setAcionKindToSet = this.setAcionKindToSet.bind(this);
         this.setAcionKindToUpdate = this.setAcionKindToUpdate.bind(this);
         this.setAcionKindToNone = this.setAcionKindToNone.bind(this);
+
+        // Wrap and proxy the state
+        this.proxiedState = new Proxy<StateWrapper<T>>(
+            { __STATEMANJS_STATE__: element } as StateWrapper<T>,
+            this.createProxyHandler() as ProxyHandler<StateWrapper<T>>,
+        );
     }
+
+    /**
+     * The state is in a special wrapper
+     * for the possibility of using with a proxy.
+     */
+    proxiedState: StateWrapper<T>;
 
     isNeedToCheckProperties = false;
 
-    acionKind: ActionKind = "none";
+    actionKind: ActionKind = "none";
 
     /** All active subscribers. */
     activeSubscribers: Subscriber[] = [];
@@ -186,7 +188,10 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
     }
 
     /** Proxy handler. Intercepts all state actions and checks access status. */
-    handler(context: StatemanjsBaseAPI<T>, path: string[]): ProxyHandler<T> {
+    handler(
+        context: StatemanjsBaseAPI<T>,
+        path: string[],
+    ): ProxyHandler<StateWrapper<T>> {
         return {
             get(target: any, prop: any): any {
                 return context.checkAccessKind(target, prop, path);
@@ -199,7 +204,7 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
 
                         if (
                             context.isNeedToCheckProperties &&
-                            context.acionKind === "update"
+                            context.actionKind === "update"
                         ) {
                             const newPath = path
                                 .concat(prop)
@@ -230,7 +235,7 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
      * Creates a proxy handler @see {StatemanjsBaseAPI.handler} with needed context.
      * @returns Proxy handler.
      */
-    createProxyHandler(): ProxyHandler<T> {
+    createProxyHandler(): ProxyHandler<StateWrapper<T>> {
         return this.handler(this, []);
     }
 
@@ -385,15 +390,15 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
     }
 
     setAcionKindToSet(): void {
-        this.acionKind = "set";
+        this.actionKind = "set";
     }
 
     setAcionKindToUpdate(): void {
-        this.acionKind = "update";
+        this.actionKind = "update";
     }
 
     setAcionKindToNone(): void {
-        this.acionKind = "none";
+        this.actionKind = "none";
     }
 
     isAnyPropertyPartOfAnyPath(properties: string[], paths: string[]): boolean {
@@ -406,326 +411,4 @@ class _StatemanjsBase<T extends object> implements StatemanjsBaseAPI<T> {
         }
         return false;
     }
-}
-
-function _createStatemanjsBase<T extends object>(): StatemanjsBaseAPI<T> {
-    return new _StatemanjsBase<T>();
-}
-
-class _Statemanjs<E> implements StatemanjsAPI<E> {
-    constructor(element: E) {
-        // Bindings
-        this.set = this.set.bind(this);
-        this.get = this.get.bind(this);
-        this.subscribe = this.subscribe.bind(this);
-        this.unsubscribeAll = this.unsubscribeAll.bind(this);
-        this.getActiveSubscribersCount =
-            this.getActiveSubscribersCount.bind(this);
-        this.update = this.update.bind(this);
-        this.unwrap = this.unwrap.bind(this);
-
-        // Composition (using factory func for exclude StatePackBase interface from declaration) for access to common API.
-        this.#baseApi = _createStatemanjsBase<StateWrapper<E>>();
-
-        // Wrap and proxy the state
-        this.#proxiedState = new Proxy<StateWrapper<E>>(
-            { __STATEMANJS_STATE__: element },
-            this.#baseApi.createProxyHandler(),
-        );
-    }
-
-    #baseApi: StatemanjsBaseAPI<StateWrapper<E>>;
-
-    /**
-     * The state is in a special wrapper
-     * for the possibility of using with a proxy.
-     */
-    #proxiedState: StateWrapper<E>;
-
-    /**
-     * Accepts a new state and compares it with the current one.
-     * Nothing will happen if the passed value is equal to the current one.
-     * @param newState New state.
-     * @returns Status of operation.
-     */
-    set(newState: E): boolean {
-        try {
-            this.#baseApi.setAcionKindToSet();
-            this.#baseApi.allowAccessToState();
-            this.#proxiedState.__STATEMANJS_STATE__ = newState;
-            this.#baseApi.denyAccessToState();
-
-            if (!this.#baseApi.getWasChanged()) {
-                return false;
-            }
-
-            this.#baseApi.setWasChangedToFalse();
-            this.#baseApi.runActiveSubscribersCb();
-            this.#baseApi.resetPathToChangedProperty();
-            this.#baseApi.setAcionKindToNone();
-
-            return true;
-        } catch (error) {
-            throw new Error(
-                formatError(
-                    "An error occurred while setting the new state",
-                    error,
-                ),
-            );
-        }
-    }
-
-    /** Get current state */
-    get(): E {
-        return this.#proxiedState.__STATEMANJS_STATE__;
-    }
-
-    /**
-     * The method of subscribing to the status change.
-     * Accepts a callback function (subscription callback),
-     * which will be called at each update, and a subscription options object.
-     * In the options, you can specify information about the subscription,
-     * as well as specify the condition under which the subscriber will be notified
-     * and mark the subscriber as protected. All subscribers are unprotected by default.
-     * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
-     * Returns the unsubscribe callback function.
-     *
-     * @param subscriptionCb A function that runs on every update.
-     * @param subscriptionOptions Additional information and notification condition.
-     * @returns Unsubscribe callback function.
-     */
-    subscribe(
-        subscriptionCb: SubscriptionCb<E>,
-        subscriptionOptions: SubscriptionOptions<E> = {},
-    ): UnsubscribeCb {
-        const subscriberId = this.#baseApi.generateSubscriberId();
-
-        const notifyConditionCb = subscriptionOptions.notifyCondition;
-
-        if (
-            subscriptionOptions.properties &&
-            subscriptionOptions.properties.length > 0
-        ) {
-            this.#baseApi.isNeedToCheckProperties = true;
-        }
-
-        this.#baseApi.addSubscriber({
-            subId: subscriberId,
-            subCb: () => subscriptionCb(this.get()),
-            notifyCondition: (): boolean => {
-                if (subscriptionOptions.properties) {
-                    if (!this.#baseApi.isObject(this.unwrap())) {
-                        throw new Error(
-                            "You can't add properties to track if your state is not an object",
-                        );
-                    }
-
-                    try {
-                        return this.#baseApi.isAnyPropertyPartOfAnyPath(
-                            subscriptionOptions.properties as string[],
-                            this.#baseApi.getPathToChangedProperty(),
-                        );
-                    } catch (error) {
-                        throw new Error(
-                            formatError(
-                                "An error occurred when accessing a property from the subscriptionOptions list",
-                                error,
-                            ),
-                        );
-                    }
-                }
-
-                return (
-                    notifyConditionCb === undefined ||
-                    notifyConditionCb(this.get())
-                );
-            },
-            isProtected: subscriptionOptions.protect ?? false,
-        });
-
-        return (): void => {
-            if (
-                !subscriptionOptions.properties ||
-                subscriptionOptions.properties.length === 0
-            ) {
-                this.#baseApi.isNeedToCheckProperties = false;
-            }
-
-            this.#baseApi.unsubscribeById(subscriberId);
-        };
-    }
-
-    /** Remove all unprotected subscribers */
-    unsubscribeAll(): void {
-        this.#baseApi.isNeedToCheckProperties = false;
-        this.#baseApi.unsubscribeAll();
-    }
-
-    /**
-     * Returns count of all active subscribers.
-     * @returns number.
-     */
-    getActiveSubscribersCount(): number {
-        return this.#baseApi.getActiveSubscribersCount();
-    }
-
-    /**
-     * Flexible state update.
-     * @param updateCb Callback for state updates.
-     */
-    update(updateCb: UpdateCb<E>): boolean {
-        try {
-            this.#baseApi.setAcionKindToUpdate();
-            this.#baseApi.allowAccessToState();
-            updateCb(this.get());
-            this.#baseApi.denyAccessToState();
-
-            if (!this.#baseApi.getWasChanged()) {
-                return false;
-            }
-
-            this.#baseApi.setWasChangedToFalse();
-            this.#baseApi.runActiveSubscribersCb();
-            this.#baseApi.resetPathToChangedProperty();
-            this.#baseApi.setAcionKindToNone();
-
-            return true;
-        } catch (error) {
-            throw new Error(
-                formatError("An error occurred while update the state", error),
-            );
-        }
-    }
-
-    /**
-     * Unwrap a proxy object to a regular JavaScript object
-     * @returns unwrapped state
-     */
-    unwrap(): E {
-        this.#baseApi.allowUnwrap();
-        const unwrapped = this.get();
-        this.#baseApi.denyUnwrap();
-
-        return unwrapped;
-    }
-
-    /**
-     * Dispatch an async action
-     * @param action An async action. It accepts a stateManager object,
-     * which is used to access the current state.
-     * @returns Promise.
-     */
-    async asyncAction(
-        action: (stateManager: StatemanjsAPI<E>) => Promise<void>,
-    ): Promise<void> {
-        try {
-            await action(this);
-        } catch (error) {
-            throw new Error(
-                `An error occurred while dispatching the async action: ${
-                    (error as Error).message
-                }`,
-            );
-        }
-    }
-
-    /**
-     * Create a computed state for a state property.
-     * @param selectorFn A function that returns a value of a state property.
-     * @returns A computed state.
-     */
-    createSelector<T>(selectorFn: (state: E) => T): StatemanjsComputedAPI<T> {
-        const selector = (): T => selectorFn(this.get());
-        return createComputedState<T>(selector, [this]);
-    }
-}
-
-class _StatemanjsComputed<T> implements StatemanjsComputedAPI<T> {
-    constructor(
-        callback: () => T,
-        deps: (StatemanjsAPI<any> | StatemanjsComputedAPI<any>)[],
-    ) {
-        if (!deps.length) {
-            throw new Error("");
-        }
-
-        this.#statemanjs = new _Statemanjs<T>(callback());
-
-        for (const d of deps) {
-            d.subscribe(
-                (): void => {
-                    this.#statemanjs.set(callback());
-                },
-                { protect: true },
-            );
-        }
-
-        // Bindings
-        this.get = this.get.bind(this);
-        this.subscribe = this.subscribe.bind(this);
-        this.unsubscribeAll = this.unsubscribeAll.bind(this);
-        this.getActiveSubscribersCount =
-            this.getActiveSubscribersCount.bind(this);
-        this.unwrap = this.unwrap.bind(this);
-    }
-
-    #statemanjs: StatemanjsAPI<T>;
-
-    /** Get current state */
-    get(): T {
-        return this.#statemanjs.get();
-    }
-
-    /**
-     * The method of subscribing to the status change.
-     * Accepts a callback function (subscription callback),
-     * which will be called at each update, and a subscription options object.
-     * In the options, you can specify information about the subscription,
-     * as well as specify the condition under which the subscriber will be notified
-     * and mark the subscriber as protected. All subscribers are unprotected by default.
-     * Protected subscribers can only be unsubscribed using the unsubscribe method returned by this method.
-     * Returns the unsubscribe callback function.
-     *
-     * @param subscriptionCb A function that runs on every update.
-     * @param subscriptionOptions Additional information and notification condition.
-     * @returns Unsubscribe callback function.
-     */
-    subscribe(
-        subscriptionCb: SubscriptionCb<T>,
-        subscriptionOptions?: SubscriptionOptions<T> | undefined,
-    ): UnsubscribeCb {
-        return this.#statemanjs.subscribe(subscriptionCb, subscriptionOptions);
-    }
-
-    /** Remove all unprotected subscribers */
-    unsubscribeAll(): void {
-        this.#statemanjs.unsubscribeAll();
-    }
-
-    /**
-     * Returns count of all active subscribers.
-     * @returns number.
-     */
-    getActiveSubscribersCount(): number {
-        return this.#statemanjs.getActiveSubscribersCount();
-    }
-
-    /**
-     * Unwrap a proxy object to a regular JavaScript object
-     * @returns unwrapped state
-     */
-    unwrap(): T {
-        return this.#statemanjs.unwrap();
-    }
-}
-
-export function createState<T>(element: T): StatemanjsAPI<T> {
-    return new _Statemanjs(element);
-}
-
-export function createComputedState<T>(
-    callback: () => T,
-    deps: StatemanjsAPI<any>[],
-): StatemanjsComputedAPI<T> {
-    return new _StatemanjsComputed<T>(callback, deps);
 }

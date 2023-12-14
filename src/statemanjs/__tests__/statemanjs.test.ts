@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { formatError } from "../helpers";
+import { formatError } from "../utility";
 import {
     StatemanjsAPI,
     StatemanjsComputedAPI,
     createComputedState,
     createState,
 } from "../index";
+import { TransactionService } from "../service/transactionService";
 
 type Moon = {
     name: string;
@@ -835,6 +836,69 @@ describe("Utils", () => {
         expect(formatError(description, new Error(errorMsg))).toEqual(
             `${description}: ${errorMsg}`,
         );
+    });
+});
+
+describe("TransactionService", () => {
+    it("should add a transaction", () => {
+        const transactionService = new TransactionService<number>(9);
+        transactionService.addTransaction(8);
+        expect(transactionService.totalTransactions).toBe(2);
+    });
+
+    it("should get the last transaction", () => {
+        const transactionService = new TransactionService<number>(9);
+        transactionService.addTransaction(8);
+        const lastTransaction = transactionService.getLastTransaction();
+        expect(lastTransaction).not.toBeNull();
+        expect(lastTransaction!.snapshot).toBe(8);
+    });
+
+    it("should get all transactions", () => {
+        const transactionService = new TransactionService<number>(1);
+        transactionService.addTransaction(2);
+        transactionService.addTransaction(3);
+        const allTransactions = transactionService.getAllTransactions();
+        expect(allTransactions).toHaveLength(2);
+    });
+
+    it("should get a transaction by number", () => {
+        const transactionService = new TransactionService<number>(3);
+        transactionService.addTransaction(42);
+        const transaction = transactionService.getTransactionByNumber(1);
+        expect(transaction?.snapshot).toBe(42);
+    });
+
+    it("should get the last diff", () => {
+        const transactionService = new TransactionService<number>(3);
+        transactionService.addTransaction(42);
+        transactionService.addTransaction(21);
+        const lastDiff = transactionService.getLastDiff();
+        expect(lastDiff?.old).toBe(42);
+        expect(lastDiff?.new).toBe(21);
+    });
+
+    it("should get the diff between two transactions", () => {
+        const transactionService = new TransactionService<number>(3);
+        transactionService.addTransaction(42);
+        transactionService.addTransaction(21);
+        const diff = transactionService.getDiffBetween(1, 2);
+        expect(diff?.old).toBe(42);
+        expect(diff?.new).toBe(21);
+    });
+
+    it("should get the null last diff", () => {
+        const transactionService = new TransactionService<number>(3);
+        transactionService.addTransaction(42);
+        const diff = transactionService.getLastDiff();
+        expect(diff).toBeNull();
+    });
+
+    it("should get the null diff between two transactions", () => {
+        const transactionService = new TransactionService<number>(3);
+        transactionService.addTransaction(42);
+        const diff = transactionService.getDiffBetween(1, 2);
+        expect(diff).toBeNull();
     });
 });
 

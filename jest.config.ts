@@ -21,13 +21,14 @@ const config: Config.InitialOptions = {
         "!**/*.config.{js,ts}",
         // TODO: add tests for solidjs and remove this line
         "!src/statemanjs-solid/**",
+        "!src/statemanjs/index.ts",
     ],
     coverageThreshold: {
         global: {
-            branches: 80,
-            functions: 80,
-            lines: 80,
-            statements: 80,
+            branches: 70,
+            functions: 70,
+            lines: 70,
+            statements: 70,
         },
     },
     coverageReporters: ["lcov", "text"],

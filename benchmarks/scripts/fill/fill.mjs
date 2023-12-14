@@ -12,7 +12,7 @@ program.name("fill-test");
 // mobx
 program
     .command("m")
-    .action(() => fill(mobx.name, mobx.add, mobx.reset, mobx.getState, 10));
+    .action(() => fill(mobx.name, mobx.add, mobx.reset, mobx.getState, 100));
 
 // statemanjs
 program.command("s").action(() => {
@@ -21,7 +21,7 @@ program.command("s").action(() => {
         statemanjs.add,
         statemanjs.reset,
         statemanjs.getState,
-        10,
+        100,
     );
 });
 
@@ -34,13 +34,13 @@ program
             effector.add,
             effector.reset,
             effector.getState,
-            10,
+            100,
         ),
     );
 
 // redux
 program
     .command("r")
-    .action(() => fill(redux.name, redux.add, redux.reset, redux.getState, 10));
+    .action(() => fill(redux.name, redux.add, redux.reset, redux.getState, 100));
 
 program.parse();

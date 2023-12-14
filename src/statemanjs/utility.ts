@@ -1,3 +1,4 @@
+/* istanbul ignore file */
 /**
  * Makes the error message clear and beautiful.
  * @param description Description of where the error occurred

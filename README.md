@@ -184,21 +184,23 @@ marsExplorerState.set({
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
--   [Introduction](#introduction)
--   [API](#api)
--   [Any data type as a state](#any-data-type-as-a-state)
--   [Installation](#installation)
--   [Usage](#usage)
-    -   [Subscribe to changes](#subscribe-to-changes)
-    -   [State change](#state-change)
-    -   [Unwrap](#unwrap)
-    -   [Computed state](#computed-state)
-    -   [Selectors](#selectors)
-    -   [Async actions](#async-actions)
--   [Performance test](#performance-test)
-    -   [Fill case.](#fill-case)
--   [Integrations](#integrations)
--   [For contributors](#for-contributors)
+- [Introduction](#introduction)
+- [API](#api)
+- [Any data type as a state](#any-data-type-as-a-state)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Subscribe to changes](#subscribe-to-changes)
+  - [State change](#state-change)
+  - [Unwrap](#unwrap)
+  - [Computed state](#computed-state)
+  - [Selectors](#selectors)
+  - [Async actions](#async-actions)
+  - [Debug](#debug)
+    - [Transactions](#transactions)
+- [Performance test](#performance-test)
+    - [Fill case.](#fill-case)
+- [Integrations](#integrations)
+- [For contributors](#for-contributors)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -295,6 +297,13 @@ asyncAction(
  * @returns A computed state.
  */
 createSelector<E>(selectorFn: (state: T) => E): StatemanjsComputedAPI<E>;
+
+/**
+ * Debug API. Allows you to use additional debugging functionality such as transactions.
+ * Parameters are set when creating the state.
+ * @see {DebugAPI}
+ */
+DEBUG?: DebugAPI<T>;
 ```
 
 The `createComputedState` method is used to create a computed state:
@@ -341,6 +350,40 @@ getActiveSubscribersCount(): number;
  * @returns unwrapped state
  */
 unwrap(): T;
+```
+
+`TransactionAPI<T>`
+
+```ts
+/**
+ * Number of transactions since state initialization
+ */
+totalTransactions: number;
+
+/**
+ * Add transaction to the chain
+ * @param snapshot
+ */
+addTransaction(snapshot: T): void;
+
+getLastTransaction(): Transaction<T> | null;
+
+getAllTransactions(): Transaction<T>[];
+
+getTransactionByNumber(transactionNumber: number): Transaction<T> | null;
+
+getLastDiff(): TransactionDiff<T> | null;
+
+getDiffBetween(
+    transactionA: number,
+    transactionB: number,
+): TransactionDiff<T> | null;
+```
+
+`DebugAPI<T>`
+
+```ts
+transactionService: TransactionAPI<T>;
 ```
 
 # Any data type as a state
@@ -439,7 +482,7 @@ counterState.subscribe(
 
 You can specify which properties you want the subscriber to be notified when they change (at least one). If none of the properties have been changed, the subscriber will not be notified. Note that the `set` method always replaces the state, so use the `update` method to observe the properties correctly. Set is set.
 
-````js
+```js
 const userState = createState({
     name: "Jake",
     surname: "Dog",
@@ -455,7 +498,9 @@ userState.subscribe(
 
 userState.subscribe(
     (state) => {
-        console.log(`Hobbies have been changed: ${state.info.hobbies.join(", ")}`);
+        console.log(
+            `Hobbies have been changed: ${state.info.hobbies.join(", ")}`,
+        );
     },
     { properties: ["info.hobbies"] },
 );
@@ -475,7 +520,7 @@ const unsub = counterState.subscribe(
 
 // cancel subscribe
 unsub();
-````
+```
 
 To unsubscribe all active and unprotected subscriptions from a state, use the `unsubscribeAll` method;
 
@@ -616,6 +661,143 @@ state.asyncAction(async (stateManager) => {
     stateManager.update((s) => {
         s.count++;
     });
+});
+```
+
+## Debug
+
+### Transactions
+
+```js
+const arrState = createState([], { transactionsLen: 10 });
+
+const gat = () => arrState.DEBUG.transactionService.getAllTransactions();
+
+arrState.subscribe((state) => {
+    console.log("diff: ", arrState.DEBUG.transactionService.getLastDiff());
+});
+
+arrState.set([0, 1]);
+
+const arr = [
+    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+];
+
+async function te() {
+    for (let index = 0; index < arr.length; index++) {
+        const element = arr[index];
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        arrState.update((s) => {
+            s.push(element);
+        });
+    }
+}
+
+te().then(() => {
+    console.log(
+        "all transactions: ",
+        arrState.DEBUG.transactionService.getAllTransactions(),
+    );
+
+    // -->
+    // diff:  null
+    // diff:  { old: [ 0, 1 ], new: [ 0, 1, 2 ] }
+    // diff:  { old: [ 0, 1, 2 ], new: [ 0, 1, 2, 3 ] }
+    // diff:  { old: [ 0, 1, 2, 3 ], new: [ 0, 1, 2, 3, 4 ] }
+    // diff:  { old: [ 0, 1, 2, 3, 4 ], new: [ 0, 1, 2, 3, 4, 5 ] }
+    // ...
+    // all transactions:  [
+    // {
+    //     number: 11,
+    //     snapshot: [
+    //     0,  1, 2, 3, 4,
+    //     5,  6, 7, 8, 9,
+    //     10, 11
+    //     ],
+    //     timestamp: 1702588027170
+    // },
+    // {
+    //     number: 12,
+    //     snapshot: [
+    //     0, 1, 2, 3,  4,  5,
+    //     6, 7, 8, 9, 10, 11,
+    //     12
+    //     ],
+    //     timestamp: 1702588028173
+    // },
+    // {
+    //     number: 13,
+    //     snapshot: [
+    //     0,  1, 2, 3,  4,  5,
+    //     6,  7, 8, 9, 10, 11,
+    //     12, 13
+    //     ],
+    //     timestamp: 1702588029175
+    // },
+    // {
+    //     number: 14,
+    //     snapshot: [
+    //     0,  1,  2, 3,  4,  5,
+    //     6,  7,  8, 9, 10, 11,
+    //     12, 13, 14
+    //     ],
+    //     timestamp: 1702588030176
+    // },
+    // {
+    //     number: 15,
+    //     snapshot: [
+    //     0,  1,  2,  3,  4,  5,
+    //     6,  7,  8,  9, 10, 11,
+    //     12, 13, 14, 15
+    //     ],
+    //     timestamp: 1702588031179
+    // },
+    // {
+    //     number: 16,
+    //     snapshot: [
+    //     0,  1,  2,  3,  4,  5,  6,
+    //     7,  8,  9, 10, 11, 12, 13,
+    //     14, 15, 16
+    //     ],
+    //     timestamp: 1702588032180
+    // },
+    // {
+    //     number: 17,
+    //     snapshot: [
+    //     0,  1,  2,  3,  4,  5,  6,
+    //     7,  8,  9, 10, 11, 12, 13,
+    //     14, 15, 16, 17
+    //     ],
+    //     timestamp: 1702588033183
+    // },
+    // {
+    //     number: 18,
+    //     snapshot: [
+    //     0,  1,  2,  3,  4,  5,  6,
+    //     7,  8,  9, 10, 11, 12, 13,
+    //     14, 15, 16, 17, 18
+    //     ],
+    //     timestamp: 1702588034187
+    // },
+    // {
+    //     number: 19,
+    //     snapshot: [
+    //     0,  1,  2,  3,  4,  5,  6,
+    //     7,  8,  9, 10, 11, 12, 13,
+    //     14, 15, 16, 17, 18, 19
+    //     ],
+    //     timestamp: 1702588035189
+    // },
+    // {
+    //     number: 20,
+    //     snapshot: [
+    //     0,  1,  2,  3,  4,  5,  6,
+    //     7,  8,  9, 10, 11, 12, 13,
+    //     14, 15, 16, 17, 18, 19, 20
+    //     ],
+    //     timestamp: 1702588036193
+    // }
+    // ]
 });
 ```
 
