@@ -1,88 +1,75 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { StatemanjsBaseAPI } from "../api/statemanjsBaseAPI";
-import { StateWrapper, ActionKind, Subscriber } from "../entities";
-import { getErrorMessage } from "../utility";
+import {
+    StatemanjsStateWrapper,
+    ActionKind,
+    Subscriber,
+    UpdateCb,
+    SubscriptionCb,
+    SubscriptionOptions,
+    UnsubscribeCb,
+    CustomComparator,
+    DefaultComparator,
+    BaseSetOptions,
+} from "../entities";
+import { formatError, getErrorMessage } from "../utility";
 
 export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
-    constructor(element: T) {
-        // Bindings
-        this.handler = this.handler.bind(this);
-        this.createProxyHandler = this.createProxyHandler.bind(this);
-        this.addSubscriber = this.addSubscriber.bind(this);
-        this.generateId = this.generateId.bind(this);
-        this.generateSubscriberId = this.generateSubscriberId.bind(this);
-        this.isSubscriberActive = this.isSubscriberActive.bind(this);
-        this.unsubscribeById = this.unsubscribeById.bind(this);
-        this.unsubscribeByIds = this.unsubscribeByIds.bind(this);
-        this.allowAccessToState = this.allowAccessToState.bind(this);
-        this.denyAccessToState = this.denyAccessToState.bind(this);
-        this.getIsAccessToStateAllowed =
-            this.getIsAccessToStateAllowed.bind(this);
-        this.runActiveSubscribersCb = this.runActiveSubscribersCb.bind(this);
-        this.getActiveSubscribersCount =
-            this.getActiveSubscribersCount.bind(this);
-        this.unsubscribeAll = this.unsubscribeAll.bind(this);
-        this.setWasChangedToTrue = this.setWasChangedToTrue.bind(this);
-        this.setWasChangedToFalse = this.setWasChangedToFalse.bind(this);
-        this.getWasChanged = this.getWasChanged.bind(this);
-        this.saveSlots = this.saveSlots.bind(this);
-        this.checkAccessKind = this.checkAccessKind.bind(this);
-        this.isObject = this.isObject.bind(this);
-        this.allowUnwrap = this.allowUnwrap.bind(this);
-        this.denyUnwrap = this.denyUnwrap.bind(this);
-        this.getIsUnwrapAllowed = this.getIsUnwrapAllowed.bind(this);
-        this.addPathToChangedProperty =
-            this.addPathToChangedProperty.bind(this);
-        this.getPathToChangedProperty =
-            this.getPathToChangedProperty.bind(this);
-        this.resetPathToChangedProperty =
-            this.resetPathToChangedProperty.bind(this);
-        this.setAcionKindToSet = this.setAcionKindToSet.bind(this);
-        this.setAcionKindToUpdate = this.setAcionKindToUpdate.bind(this);
-        this.setAcionKindToNone = this.setAcionKindToNone.bind(this);
-
-        // Wrap and proxy the state
-        this.proxiedState = new Proxy<StateWrapper<T>>(
-            { __STATEMANJS_STATE__: element } as StateWrapper<T>,
-            this.createProxyHandler() as ProxyHandler<StateWrapper<T>>,
-        );
-    }
-
     /**
-     * The state is in a special wrapper
-     * for the possibility of using with a proxy.
+     * The proxied state object, wrapped to intercept access and modifications.
+     * This is the core state being managed by Statemanjs.
      */
-    proxiedState: StateWrapper<T>;
-
-    isNeedToCheckProperties = false;
-
-    actionKind: ActionKind = "none";
-
-    /** All active subscribers. */
-    activeSubscribers: Subscriber[] = [];
-
-    /** Array of active subscriber IDs  */
-    activeSubscriberIds: string[] = [];
-
-    /** Ensures that the state will be changed only using the built-in methods. */
-    isAccessToStateAllowed = false;
+    #proxiedState: StatemanjsStateWrapper<T>;
 
     /**
-     * Is state can be unwrapped.
-     * @default false
-     * */
-    isUnwrapAllowed = false;
-
-    /**
-     * Whether the state was changed after calling the state change methods.
-     * The state will change only if the new value and the previous value are not equal.
+     * A map of active subscribers identified by a unique symbol.
      */
-    wasChanged = false;
+    #activeSubscribers: Record<symbol, Subscriber> = {};
 
     /**
-     * The use of methods from this list is allowed only inside the update method @see {StatemanjsAPI.update}.
+     * Indicates if properties should be checked for changes.
      */
-    dangerMethods = [
+    #isNeedToCheckProperties = false;
+
+    /**
+     * The kind of action currently being performed (e.g., 'set' or 'update').
+     */
+    #actionKind: ActionKind = "none";
+
+    /**
+     * Controls whether access to the state is allowed. Prevents unauthorized access.
+     */
+    #isAccessToStateAllowed = false;
+
+    /**
+     * Controls whether the state can be unwrapped, which might bypass proxies.
+     */
+    #isUnwrapAllowed = false;
+
+    /**
+     * Flag indicating whether any part of the state was changed during the last operation.
+     */
+    #wasChanged = false;
+
+    /**
+     * Stores the path to the property that was changed in the state.
+     */
+    #pathToChangedProperty: Set<string> = new Set();
+
+    /**
+     * If set to true, skips state comparison during updates.
+     */
+    #skipComparison = false;
+
+    /**
+     * Cache for storing previously created proxies for properties in the state.
+     */
+    #proxyCache: Map<string, any>;
+
+    /**
+     * Set of method names considered dangerous, which should be guarded during state modifications.
+     */
+    readonly #dangerMethods: Set<string> = new Set([
         "clear", // (Map; Set)
         "delete", // (Map; WeakSet; Set)
         "set", // (Map)
@@ -96,319 +83,527 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
         "shift", // (Array)
         "unshift", // (Array)
         "splice", // (Array)
-    ];
+    ]);
 
-    pathToChangedProperty: string[] = [];
+    readonly customComparator: CustomComparator<T> | undefined;
 
-    addPathToChangedProperty(path: string): void {
-        this.pathToChangedProperty.push(path);
+    readonly defaultComparator: DefaultComparator;
+
+    constructor(
+        element: T,
+        options: {
+            customComparator?: CustomComparator<T>;
+            defaultComparator?: DefaultComparator;
+        },
+    ) {
+        // Bindings
+        this.get = this.get.bind(this);
+        this.set = this.set.bind(this);
+        this.update = this.update.bind(this);
+        this.subscribe = this.subscribe.bind(this);
+        this.unsubscribeById = this.unsubscribeById.bind(this);
+        this.unsubscribeByIds = this.unsubscribeByIds.bind(this);
+        this.getActiveSubscribersCount =
+            this.getActiveSubscribersCount.bind(this);
+        this.unsubscribeAll = this.unsubscribeAll.bind(this);
+        this.unwrap = this.unwrap.bind(this);
+        this.getPathToChangedProperty =
+            this.getPathToChangedProperty.bind(this);
+
+        // Initialize custom comparator
+        this.customComparator = options.customComparator;
+
+        // Initialize default comparator
+        this.defaultComparator = options.defaultComparator || "ref";
+
+        // Initialize cache for proxies
+        this.#proxyCache = new Map();
+
+        // Wrap and proxy the state
+        this.#proxiedState = new Proxy<StatemanjsStateWrapper<T>>(
+            { __STATEMANJS_STATE__: element } as StatemanjsStateWrapper<T>,
+            this.#createHandler([]),
+        );
     }
 
-    getPathToChangedProperty(): string[] {
-        return this.pathToChangedProperty;
+    #isPrimitive(value: unknown): boolean {
+        return (
+            value === null ||
+            typeof value === "undefined" ||
+            typeof value === "boolean" ||
+            typeof value === "number" ||
+            typeof value === "string" ||
+            typeof value === "symbol" ||
+            typeof value === "bigint"
+        );
     }
 
-    resetPathToChangedProperty(): void {
-        this.pathToChangedProperty = [];
+    #addPathToChangedProperty(path: string): void {
+        this.#pathToChangedProperty.add(path);
     }
 
-    /** The state has been changed. */
-    setWasChangedToTrue(): void {
-        this.wasChanged = true;
-    }
-
-    /** The state hasn't been changed. */
-    setWasChangedToFalse(): void {
-        this.wasChanged = false;
-    }
-
-    /** Getter for @see {StatemanjsBaseAPI.wasChanged} */
-    getWasChanged(): boolean {
-        return this.wasChanged;
+    #resetPathToChangedProperty(): void {
+        this.#pathToChangedProperty = new Set();
     }
 
     /**
-     * Check passed prop and bind context for using internal slots.
+     * Saves the slot of a target property, binding functions if necessary.
      *
-     * Example: Map.set(), Array.push() and etc.
+     * @param {any} target - The target object.
+     * @param {any} prop - The property to be accessed.
+     * @returns {any} The value of the target's property, bound if it's a function.
      */
-    saveSlots(target: any, prop: any): any {
-        return typeof target[prop] == "function"
+    #saveSlots(target: any, prop: any): any {
+        return target && typeof target[prop] == "function"
             ? target[prop].bind(target)
             : target[prop];
     }
 
     /**
-     * Defines the element type and the property type for the element,
-     * and also determines the further behavior of the handler.
-     * Returns an error if a forbidden method was used
-     * or the state element was accessed directly otherwise returns element of state.
+     * Converts a property path array to a dot-separated string.
+     *
+     * @param {(string | symbol)[]} path - The array of path segments.
+     * @returns {string} The stringified path.
      */
-    checkAccessKind(target: any, prop: any, path: string[]): any {
-        if (typeof target[prop] === "function") {
-            // Check danger methods
-            if (this.dangerMethods.includes(prop)) {
-                if (this.getIsAccessToStateAllowed()) {
-                    this.setWasChangedToTrue();
-                    const newPath = path.concat(prop);
-                    return new Proxy(
-                        this.saveSlots(target, prop),
-                        this.handler(this, newPath),
-                    );
-                } else {
-                    throw new Error(
-                        "Access is denied. Use 'update' method to do this.",
-                    );
-                }
-            } else {
-                if (this.getIsUnwrapAllowed()) {
-                    return this.saveSlots(target, prop);
-                }
-                const newPath = path.concat(prop);
+    #stringifyPath(path: (string | symbol)[]): string {
+        let result = "";
 
-                return new Proxy(
-                    this.saveSlots(target, prop),
-                    this.handler(this, newPath),
-                );
+        for (let i = 0; i < path.length; i++) {
+            const p = path[i];
+            result += typeof p === "symbol" ? p.toString() : p;
+            if (i < path.length - 1) {
+                result += ".";
             }
-        } else if (this.isObject(target[prop]) && target[prop] !== null) {
-            if (this.getIsUnwrapAllowed()) {
-                return this.saveSlots(target, prop);
+        }
+
+        return result;
+    }
+
+    /**
+     * Checks the access kind (function, object, etc.) and returns appropriate proxies or values.
+     *
+     * @param {any} target - The target object.
+     * @param {any} prop - The property to access.
+     * @param {(string | symbol)[]} path - The path to the property.
+     * @returns {any} The accessed value or a proxy of it.
+     */
+    #checkAccessKind(target: any, prop: any, path: (string | symbol)[]): any {
+        const targetProp = target[prop];
+        const isFunc = typeof targetProp === "function";
+        const isObj = this.#isObject(targetProp) && targetProp !== null;
+
+        if (isFunc) {
+            if (
+                this.#dangerMethods.has(prop) &&
+                !this.#isAccessToStateAllowed
+            ) {
+                throw new Error(
+                    "Access is denied. Use 'update' method to do this.",
+                );
             }
 
             const newPath = path.concat(prop);
 
+            if (this.#dangerMethods.has(prop)) {
+                this.#wasChanged = true;
+                this.#clearProxyCache(path);
+            }
+
             return new Proxy(
-                this.saveSlots(target, prop),
-                this.handler(this, newPath),
+                this.#saveSlots(target, prop),
+                this.#createHandler(newPath),
             );
-        } else {
-            return this.saveSlots(target, prop);
+        }
+
+        if (isObj && !this.#isUnwrapAllowed) {
+            const newPath = path.concat(prop);
+            const stringifiedPath = this.#stringifyPath(newPath);
+
+            if (!this.#proxyCache.has(stringifiedPath)) {
+                const newProxy = new Proxy(
+                    this.#saveSlots(target, prop),
+                    this.#createHandler(newPath),
+                );
+                this.#proxyCache.set(stringifiedPath, newProxy);
+            }
+
+            return this.#proxyCache.get(stringifiedPath);
+        }
+
+        return this.#saveSlots(target, prop);
+    }
+
+    #clearProxyCache(path: (string | symbol)[]): void {
+        const pathString = this.#stringifyPath(path);
+        for (const key of this.#proxyCache.keys()) {
+            if (key.startsWith(pathString)) {
+                this.#proxyCache.delete(key);
+            }
         }
     }
 
-    /** Proxy handler. Intercepts all state actions and checks access status. */
-    handler(
-        context: StatemanjsBaseAPI<T>,
-        path: string[],
-    ): ProxyHandler<StateWrapper<T>> {
+    #isEqualShallow(a: any, b: any): boolean {
+        if (this.#isPrimitive(a) || this.#isPrimitive(b)) {
+            return a === b;
+        }
+
+        if (Object.keys(a).length !== Object.keys(b).length) {
+            return false;
+        }
+
+        for (const key in a) {
+            if (a[key] !== b[key]) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Updates a property in the state and marks the state as changed.
+     *
+     * @param {any} target - The target object.
+     * @param {any} prop - The property to update.
+     * @param {any} val - The new value to set.
+     * @param {any} newPath - The path to the property being updated.
+     */
+    #updateProperty(target: any, prop: any, val: any, newPath: any): void {
+        target[prop] = val;
+        this.#wasChanged = true;
+        this.#clearProxyCache(newPath);
+
+        if (this.#isNeedToCheckProperties && this.#actionKind === "update") {
+            const filteredPath = newPath.slice(1);
+            const pathString = this.#stringifyPath(filteredPath);
+
+            if (pathString.length) {
+                this.#addPathToChangedProperty(pathString);
+            }
+        }
+    }
+
+    /**
+     * Determines whether a property should be updated based on the comparator.
+     *
+     * @param {any} target - The target object.
+     * @param {any} prop - The property to check.
+     * @param {any} val - The new value to set.
+     * @returns {boolean} True if the property should be updated, otherwise false.
+     */
+    #isUpdateNeeded(target: any, prop: any, val: any): boolean {
+        switch (this.defaultComparator) {
+            case "ref":
+                return target[prop] !== val;
+            case "shallow":
+                return !this.#isEqualShallow(target[prop], val);
+            case "custom":
+                if (!this.customComparator) {
+                    throw new Error("Custom comparator is not provided.");
+                }
+                return !this.customComparator(target[prop], val);
+            case "none":
+            default:
+                return true;
+        }
+    }
+
+    #createHandler(
+        path: (string | symbol)[],
+    ): ProxyHandler<StatemanjsStateWrapper<T>> {
         return {
-            get(target: any, prop: any): any {
-                return context.checkAccessKind(target, prop, path);
+            get: (target: any, prop: any): any => {
+                return this.#checkAccessKind(target, prop, path);
             },
-            set(target: any, prop: any, val: any): boolean {
-                if (context.getIsAccessToStateAllowed()) {
-                    if (target[prop] !== val) {
-                        context.setWasChangedToTrue();
-                        target[prop] = val;
-
-                        if (
-                            context.isNeedToCheckProperties &&
-                            context.actionKind === "update"
-                        ) {
-                            const newPath = path
-                                .concat(prop)
-                                .filter((i) => i !== "__STATEMANJS_STATE__");
-                            const pathString = newPath.join(".");
-
-                            if (pathString.length) {
-                                context.addPathToChangedProperty(pathString);
-                            }
-                        }
-                    }
-
-                    return true;
-                } else {
+            set: (target: any, prop: any, val: any): boolean => {
+                if (!this.#isAccessToStateAllowed) {
                     throw new Error("Access is denied.");
                 }
+
+                const newPath = path.concat(prop);
+
+                if (
+                    this.#skipComparison ||
+                    this.#isUpdateNeeded(target, prop, val)
+                ) {
+                    this.#updateProperty(target, prop, val, newPath);
+                }
+
+                return true;
             },
-            defineProperty(): boolean {
-                throw new Error("Access is denied.");
+            defineProperty: (): boolean => {
+                throw new Error("Cannot define property.");
             },
-            deleteProperty(): boolean {
-                throw new Error("Access is denied.");
+            deleteProperty: (target: any, prop: string | symbol): boolean => {
+                if (!this.#isAccessToStateAllowed) {
+                    throw new Error(
+                        'Cannot delete property directly. Use "update" instead.',
+                    );
+                }
+
+                if (!(prop in target)) {
+                    console.warn(`property not found: ${String(prop)}`);
+                    return false;
+                }
+
+                const newPath = path.concat(prop);
+                delete target[prop as string];
+                this.#clearProxyCache(newPath);
+                return true;
             },
         };
     }
 
-    /**
-     * Creates a proxy handler @see {StatemanjsBaseAPI.handler} with needed context.
-     * @returns Proxy handler.
-     */
-    createProxyHandler(): ProxyHandler<StateWrapper<T>> {
-        return this.handler(this, []);
+    #addSubscriber(subscriber: Subscriber): void {
+        this.#activeSubscribers[subscriber.subId] = subscriber;
     }
 
-    /**
-     * Create the new subscriber active.
-     * @param subscriber New subscriber.
-     */
-    addSubscriber(subscriber: Subscriber): void {
-        this.activeSubscribers.push(subscriber);
-    }
-
-    /**
-     * Generate an ID-string and check it in existing IDs.
-     * @param exist array with  existing IDs.
-     * @param length generated ID length.
-     * @returns generated ID
-     */
-    generateId(exist: string[], length = 14): string {
-        const id = Math.random().toString(36).substring(2, length);
-        if (!exist.includes(id)) {
-            return id;
-        }
-
-        return this.generateId(exist);
-    }
-
-    /** Generate an ID-string and check it in active IDs */
-    generateSubscriberId(): string {
-        const id = this.generateId(this.activeSubscriberIds);
-        this.activeSubscriberIds.push(id);
+    #generateSubscriberId(): symbol {
+        const id = Symbol();
 
         return id;
     }
 
-    /**
-     * Find active subscriber by the passed ID.
-     * @param subscriberId ID for search.
-     * @returns Exist or no.
-     */
-    isSubscriberActive(subscriberId: string): boolean {
-        return this.activeSubscriberIds.includes(subscriberId);
-    }
+    #runActiveSubscribersCb(): void {
+        const activeSubscribers = this.#activeSubscribers;
+        const inactiveSubscribersId: symbol[] = [];
 
-    /**
-     * Unsubscribe active subscriber by ID.
-     * @param subscriberId
-     */
-    unsubscribeById(subscriberId: string): void {
-        if (this.isSubscriberActive(subscriberId)) {
-            this.activeSubscribers = this.activeSubscribers.filter(
-                (i) => i.subId != subscriberId,
-            );
-            this.activeSubscriberIds = this.activeSubscriberIds.filter(
-                (i) => i != subscriberId,
-            );
-        }
-    }
+        const keys = Object.getOwnPropertySymbols(activeSubscribers);
 
-    /**
-     * Unsubscribe active subscribers by ID.
-     * @param subscriberIds
-     */
-    unsubscribeByIds(subscriberIds: string[]): void {
-        this.activeSubscribers = this.activeSubscribers.filter(
-            (i) => !subscriberIds.includes(i.subId),
-        );
-        this.activeSubscriberIds = this.activeSubscriberIds.filter(
-            (i) => !subscriberIds.includes(i),
-        );
-    }
-
-    /** Allows access to the state. Called while using the built-in @see {StatemanjsAPI} methods. */
-    allowAccessToState(): void {
-        this.isAccessToStateAllowed = true;
-    }
-
-    /** Deny access to the state. Called after using the built-in @see {StatemanjsAPI} methods. */
-    denyAccessToState(): void {
-        this.isAccessToStateAllowed = false;
-    }
-
-    /** Getter for @see {StatemanjsBaseAPI.isAccessToStateAllowed} */
-    getIsAccessToStateAllowed(): boolean {
-        return this.isAccessToStateAllowed;
-    }
-
-    /** Allows unwrap state. Called while using the built-in @see {StatemanjsAPI.unwrap} method. */
-    allowUnwrap(): void {
-        this.isUnwrapAllowed = true;
-    }
-
-    /** Deny unwrap state. Called while using the built-in @see {StatemanjsAPI.unwrap} method. */
-    denyUnwrap(): void {
-        this.isUnwrapAllowed = false;
-    }
-
-    /** Getter for @see {StatemanjsBaseAPI.isUnwrapAllowed} */
-    getIsUnwrapAllowed(): boolean {
-        return this.isUnwrapAllowed;
-    }
-
-    /** Run active subscriber callbacks. */
-    runActiveSubscribersCb(): void {
-        if (this.activeSubscribers.length > 0) {
-            const inactiveSubscribersId: string[] = [];
-
-            this.activeSubscribers.forEach((s) => {
-                try {
-                    if (s.notifyCondition === undefined) {
-                        s.subCb();
-                    } else {
-                        if (s.notifyCondition()) {
-                            s.subCb();
-                        }
-                    }
-                } catch (error) {
-                    inactiveSubscribersId.push(s.subId);
-
-                    console.info(
-                        `One of you subscriber marked as inactive and was removed. Error message - ${getErrorMessage(
-                            error,
-                        )}`,
-                    );
+        for (const id of keys) {
+            const s = activeSubscribers[id];
+            try {
+                if (!s.notifyCondition || s.notifyCondition()) {
+                    s.subCb();
                 }
-            });
-
-            if (inactiveSubscribersId.length > 0) {
-                this.unsubscribeByIds(inactiveSubscribersId);
+            } catch (error) {
+                inactiveSubscribersId.push(id);
+                console.info(
+                    `One of your subscribers marked as inactive and was removed. Error message - ${getErrorMessage(
+                        error,
+                    )}`,
+                );
             }
         }
+
+        if (inactiveSubscribersId.length > 0) {
+            this.unsubscribeByIds(inactiveSubscribersId);
+        }
+    }
+
+    #isObject(entity: unknown): boolean {
+        return entity !== null && typeof entity === "object";
     }
 
     /**
-     * Returns count of all active subscribers.
-     * @returns count of subscribers.
+     * Determines if any of the specified properties are part of any path in the state.
+     *
+     * @param {string[]} properties - The properties to check.
+     * @param {string[]} paths - The paths to compare against.
+     * @returns {boolean} True if any property is part of any path, otherwise false.
      */
-    getActiveSubscribersCount(): number {
-        return this.activeSubscriberIds.length;
-    }
-
-    /** Remove all unprotected subscribers */
-    unsubscribeAll(): void {
-        this.activeSubscribers = this.activeSubscribers.filter(
-            (i) => i.isProtected,
+    #isPropertyInPath(properties: string[], paths: string[]): boolean {
+        const propertiesMap = new Map(
+            properties.map((prop) => [prop, prop.length]),
         );
-        this.activeSubscriberIds = this.activeSubscribers.map((i) => i.subId);
-    }
 
-    /** Checks if the element is an object */
-    isObject(entity: unknown): boolean {
-        return typeof entity === "object";
-    }
+        // the root has been changed
+        if (paths.length === 0) {
+            return true;
+        }
 
-    setAcionKindToSet(): void {
-        this.actionKind = "set";
-    }
-
-    setAcionKindToUpdate(): void {
-        this.actionKind = "update";
-    }
-
-    setAcionKindToNone(): void {
-        this.actionKind = "none";
-    }
-
-    isAnyPropertyPartOfAnyPath(properties: string[], paths: string[]): boolean {
-        for (let i = 0; i < properties.length; i++) {
-            for (let j = 0; j < paths.length; j++) {
-                if (paths[j].startsWith(properties[i])) {
+        return paths.some((path) => {
+            for (const [prop, length] of propertiesMap) {
+                if (path.slice(0, length) === prop) {
                     return true;
                 }
             }
+            return false;
+        });
+    }
+
+    /**
+     * Safely modifies the state within a controlled environment, ensuring access permissions.
+     *
+     * @param {() => void} modifier - The function that modifies the state.
+     * @param {ActionKind} actionKind - The kind of action being performed.
+     * @returns {boolean} True if the state was modified, otherwise false.
+     */
+    #performSafeModification(
+        modifier: () => void,
+        actionKind: ActionKind,
+    ): boolean {
+        this.#isAccessToStateAllowed = true;
+        this.#actionKind = actionKind;
+        modifier();
+        this.#actionKind = "none";
+        this.#isAccessToStateAllowed = false;
+
+        return this.#wasChanged;
+    }
+
+    public get(): T {
+        return this.#proxiedState.__STATEMANJS_STATE__;
+    }
+
+    public set(newState: T, options: BaseSetOptions<T>): boolean {
+        try {
+            const wasChanged = this.#performSafeModification((): void => {
+                this.#skipComparison = options.skipComparison || false;
+
+                this.#proxiedState.__STATEMANJS_STATE__ = newState;
+            }, "set");
+
+            if (!wasChanged) {
+                return false;
+            }
+
+            options.afterUpdate();
+
+            this.#wasChanged = false;
+            this.#runActiveSubscribersCb();
+            this.#resetPathToChangedProperty();
+            this.#actionKind = "none";
+
+            return true;
+        } catch (error) {
+            throw new Error(
+                formatError(
+                    "An error occurred while setting the new state",
+                    error,
+                ),
+            );
         }
-        return false;
+    }
+
+    public update(updateCb: UpdateCb<T>, options: BaseSetOptions<T>): boolean {
+        try {
+            const wasChanged = this.#performSafeModification((): void => {
+                this.#skipComparison = options.skipComparison || false;
+
+                updateCb(this.get());
+            }, "update");
+
+            if (!wasChanged) {
+                return false;
+            }
+
+            options.afterUpdate();
+
+            this.#wasChanged = false;
+            this.#runActiveSubscribersCb();
+            this.#resetPathToChangedProperty();
+            this.#actionKind = "none";
+
+            return true;
+        } catch (error) {
+            throw new Error(
+                formatError(
+                    "An error occurred while updating the state",
+                    error,
+                ),
+            );
+        }
+    }
+
+    public subscribe(
+        subscriptionCb: SubscriptionCb<T>,
+        subscriptionOptions: SubscriptionOptions<T> = {},
+    ): UnsubscribeCb {
+        const subscriberId = this.#generateSubscriberId();
+
+        const notifyConditionCb = subscriptionOptions.notifyCondition;
+        const hasProperties =
+            subscriptionOptions.properties &&
+            subscriptionOptions.properties.length > 0;
+
+        if (hasProperties) {
+            this.#isNeedToCheckProperties = true;
+        }
+
+        this.#addSubscriber({
+            subId: subscriberId,
+            subCb: () => subscriptionCb(this.get()),
+            notifyCondition: (): boolean => {
+                if (hasProperties) {
+                    if (!this.#isObject(this.unwrap())) {
+                        throw new Error(
+                            "You can't add properties to track if your state is not an object",
+                        );
+                    }
+
+                    try {
+                        return this.#isPropertyInPath(
+                            subscriptionOptions.properties as string[],
+                            this.getPathToChangedProperty(),
+                        );
+                    } catch (error) {
+                        throw new Error(
+                            formatError(
+                                "An error occurred when accessing a property from the subscriptionOptions list",
+                                error,
+                            ),
+                        );
+                    }
+                }
+
+                return (
+                    notifyConditionCb === undefined ||
+                    notifyConditionCb(this.get())
+                );
+            },
+            isProtected: subscriptionOptions.protect ?? false,
+        });
+
+        return (): void => {
+            if (!hasProperties) {
+                this.#isNeedToCheckProperties = false;
+            }
+
+            this.unsubscribeById(subscriberId);
+        };
+    }
+
+    public unsubscribeById(subscriberId: symbol): void {
+        delete this.#activeSubscribers[subscriberId];
+    }
+
+    public unsubscribeByIds(subscriberIds: symbol[]): void {
+        subscriberIds.forEach((id) => {
+            this.unsubscribeById(id);
+        });
+    }
+
+    public getActiveSubscribersCount(): number {
+        return Object.getOwnPropertySymbols(this.#activeSubscribers).length;
+    }
+
+    public unsubscribeAll(): void {
+        this.#isNeedToCheckProperties = false;
+
+        const protectedSubscribers: Record<symbol, Subscriber> = {};
+
+        for (const id of Object.getOwnPropertySymbols(
+            this.#activeSubscribers,
+        )) {
+            const subscriber = this.#activeSubscribers[id];
+            if (subscriber.isProtected) {
+                protectedSubscribers[id] = subscriber;
+            }
+        }
+
+        this.#activeSubscribers = protectedSubscribers;
+    }
+
+    public unwrap(): T {
+        this.#isUnwrapAllowed = true;
+        const unwrapped = this.get();
+        this.#isUnwrapAllowed = false;
+
+        return unwrapped;
+    }
+
+    public getPathToChangedProperty(): string[] {
+        return Array.from(this.#pathToChangedProperty.values());
     }
 }

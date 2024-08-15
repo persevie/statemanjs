@@ -8,6 +8,7 @@ import {
     createState,
 } from "../index";
 import { TransactionService } from "../service/transactionService";
+import _ from "lodash";
 
 type Moon = {
     name: string;
@@ -80,6 +81,38 @@ describe("Statemanjs API", () => {
             system: "Solar system",
             moons: [{ name: "Phobos" }],
         });
+    });
+
+    test("it should not update state or notify subscribers if the same object is passed to set", () => {
+        const initialState = {
+            name: "Earth",
+            system: "Solar System",
+            moons: [{ name: "Moon" }],
+            characteristics: {
+                gravity: 1,
+                atmosphere: {
+                    composition: {
+                        oxygen: 21,
+                    },
+                },
+            },
+        };
+
+        const planetState = createState<Planet>(
+            { ...initialState },
+            { defaultComparator: "shallow" },
+        );
+
+        let notifyCount = 0;
+
+        planetState.subscribe(() => {
+            notifyCount++;
+        });
+
+        planetState.set({ ...initialState });
+
+        expect(planetState.get()).toMatchObject({ ...initialState });
+        expect(notifyCount).toBe(0);
     });
 
     test("it should update element (update)", () => {
@@ -248,7 +281,7 @@ describe("Statemanjs API", () => {
         expect(unwrappedPlanet.moons[0].name).toBe("Moon");
     });
 
-    test("it should not notify by props changing (set is set, not update)", () => {
+    test("it should not notify only by props changing (set is set, not update)", () => {
         const shuttleState = createState({
             speed: 1000,
             exitManeuverDistance: 20000,
@@ -288,7 +321,104 @@ describe("Statemanjs API", () => {
             startPreparingForManeuver: true,
         });
 
+        expect(countOfNotifications).toBe(4);
+    });
+
+    test("it should notify only by notify condition in set", () => {
+        const shuttleState = createState({
+            speed: 1000,
+            exitManeuverDistance: 20000,
+            startPreparingForManeuver: false,
+        });
+
+        let countOfNotifications = 0;
+
+        let currStartPreparingForManeuver =
+            shuttleState.get().startPreparingForManeuver;
+
+        shuttleState.subscribe(
+            (s) => {
+                countOfNotifications = countOfNotifications + 1;
+                currStartPreparingForManeuver = s.startPreparingForManeuver;
+            },
+            {
+                notifyCondition: (s) =>
+                    s.startPreparingForManeuver !==
+                    currStartPreparingForManeuver,
+            },
+        );
+
+        shuttleState.set({
+            speed: 1500,
+            exitManeuverDistance: 18500,
+            startPreparingForManeuver: false,
+        });
+
+        shuttleState.set({
+            speed: 1700,
+            exitManeuverDistance: 16800,
+            startPreparingForManeuver: false,
+        });
+
+        shuttleState.set({
+            speed: 2800,
+            exitManeuverDistance: 15000,
+            startPreparingForManeuver: false,
+        });
+
+        shuttleState.set({
+            speed: 2800,
+            exitManeuverDistance: 15000,
+            startPreparingForManeuver: true,
+        });
+
+        expect(countOfNotifications).toBe(1);
+    });
+
+    test("the custom comparator (`_.isEqual`) should works", () => {
+        const initialState = {
+            name: "Earth",
+            system: "Solar System",
+            moons: [{ name: "Moon" }],
+            characteristics: {
+                gravity: 1,
+                atmosphere: {
+                    composition: {
+                        oxygen: 21,
+                    },
+                },
+            },
+        };
+
+        const planetState = createState(
+            { ...initialState },
+            {
+                customComparator: (a, b): boolean => _.isEqual(a, b),
+                defaultComparator: "custom",
+            },
+        );
+
+        let countOfNotifications = 0;
+
+        planetState.subscribe(() => {
+            countOfNotifications = countOfNotifications + 1;
+        });
+
+        planetState.set({ ...initialState });
+
         expect(countOfNotifications).toBe(0);
+
+        planetState.set({
+            ...initialState,
+            ...{
+                characteristics: {
+                    gravity: 1,
+                    atmosphere: { composition: { oxygen: 20 } },
+                },
+            },
+        });
+
+        expect(countOfNotifications).toBe(1);
     });
 
     test("it should notify only by props changing (update)", () => {
@@ -310,23 +440,23 @@ describe("Statemanjs API", () => {
         shuttleState.update((s) => {
             s.speed = 1500;
             s.exitManeuverDistance = 18500;
-        }, shuttleState.unwrap());
+        });
 
         shuttleState.update((s) => {
             s.speed = 1700;
             s.exitManeuverDistance = 16800;
-        }, shuttleState.unwrap());
+        });
 
         shuttleState.update((s) => {
             s.speed = 2800;
             s.exitManeuverDistance = 15000;
-        }, shuttleState.unwrap());
+        });
 
         expect(countOfNotifications).toBe(0);
 
         shuttleState.update((s) => {
             s.startPreparingForManeuver = true;
-        }, shuttleState.unwrap());
+        });
 
         expect(countOfNotifications).toBe(1);
     });
@@ -365,22 +495,21 @@ describe("Statemanjs API", () => {
             moons: [],
         });
 
-        const planetNameSelector = (state: Planet) => state.name;
+        const planetNameSelectorState: StatemanjsComputedAPI<string> =
+            planetState.createSelector((state: Planet) => state.name, {
+                properties: ["name"],
+            });
 
-        const planetName: StatemanjsComputedAPI<string> =
-            planetState.createSelector(planetNameSelector);
-
-        expect(planetName.get()).toBe("Mars");
+        expect(planetNameSelectorState.get()).toBe("Mars");
 
         let count = 0;
 
-        planetName.subscribe(() => {
+        planetNameSelectorState.subscribe(() => {
             count++;
         });
 
-        planetState.set({
-            ...planetState.get(),
-            ...{ moons: [{ name: "Phobos" }] },
+        planetState.update((s) => {
+            s.moons.push({ name: "Phobos" });
         });
 
         expect(count).toBe(0);
@@ -397,7 +526,7 @@ describe("Statemanjs API", () => {
         });
 
         expect(count).toBe(1);
-        expect(planetName.get()).toBe("Earth");
+        expect(planetNameSelectorState.get()).toBe("Earth");
     });
 });
 

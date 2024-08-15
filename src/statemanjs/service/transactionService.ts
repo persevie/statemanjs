@@ -1,5 +1,5 @@
 import { TransactionAPI } from "../api/transactionAPI";
-import { Transaction, TransactionDiff } from "../entities";
+import { Transaction, TransactionDiff } from "../types/transactionTypes";
 
 export class TransactionService<T> implements TransactionAPI<T> {
     constructor(maxLength: number) {

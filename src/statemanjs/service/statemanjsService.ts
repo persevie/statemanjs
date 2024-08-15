@@ -4,16 +4,24 @@ import { StatemanjsAPI } from "../api/statemanjsApi";
 import { StatemanjsBaseAPI } from "../api/statemanjsBaseAPI";
 import { StatemanjsComputedAPI } from "../api/statemanjsComputedAPI";
 import {
+    SetOptions,
+    StatemanjsComputedServiceOptions,
+    StatemanjsServiceOptions,
     SubscriptionCb,
     SubscriptionOptions,
     UnsubscribeCb,
     UpdateCb,
+    UpdateOptions,
 } from "../entities";
 import { formatError } from "../utility";
 import { StatemanjsBaseService } from "./statemanjsBaseService";
 
 export class StatemanjsService<E> implements StatemanjsAPI<E> {
-    constructor(element: E, debugService?: DebugAPI<E>) {
+    #statemanjsBaseService: StatemanjsBaseAPI<E>;
+
+    readonly DEBUG: DebugAPI<E> | undefined;
+
+    constructor(element: E, options: StatemanjsServiceOptions<E>) {
         // Bindings
         this.set = this.set.bind(this);
         this.get = this.get.bind(this);
@@ -24,13 +32,12 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
         this.update = this.update.bind(this);
         this.unwrap = this.unwrap.bind(this);
 
-        this.#statemanjsBaseService = new StatemanjsBaseService(element);
-        this.DEBUG = debugService;
+        this.#statemanjsBaseService = new StatemanjsBaseService(element, {
+            customComparator: options.customComparator,
+            defaultComparator: options.defaultComparator,
+        });
+        this.DEBUG = options.debugService;
     }
-
-    #statemanjsBaseService: StatemanjsBaseAPI<E>;
-
-    DEBUG: DebugAPI<E> | undefined;
 
     /**
      * Accepts a new state and compares it with the current one.
@@ -38,28 +45,20 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
      * @param newState New state.
      * @returns Status of operation.
      */
-    set(newState: E): boolean {
+    set(newState: E, options: SetOptions<E> = {}): boolean {
         try {
-            this.#statemanjsBaseService.setAcionKindToSet();
-            this.#statemanjsBaseService.allowAccessToState();
-            this.#statemanjsBaseService.proxiedState.__STATEMANJS_STATE__ =
-                newState;
-            this.#statemanjsBaseService.denyAccessToState();
+            const wasChanged = this.#statemanjsBaseService.set(newState, {
+                afterUpdate: (): void => {
+                    if (this.DEBUG !== undefined) {
+                        this.DEBUG.transactionService.addTransaction(
+                            this.unwrap(),
+                        );
+                    }
+                },
+                ...options,
+            });
 
-            if (!this.#statemanjsBaseService.getWasChanged()) {
-                return false;
-            }
-
-            if (this.DEBUG !== undefined) {
-                this.DEBUG.transactionService.addTransaction(this.unwrap());
-            }
-
-            this.#statemanjsBaseService.setWasChangedToFalse();
-            this.#statemanjsBaseService.runActiveSubscribersCb();
-            this.#statemanjsBaseService.resetPathToChangedProperty();
-            this.#statemanjsBaseService.setAcionKindToNone();
-
-            return true;
+            return wasChanged;
         } catch (error) {
             throw new Error(
                 formatError(
@@ -72,7 +71,7 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
 
     /** Get current state */
     get(): E {
-        return this.#statemanjsBaseService.proxiedState.__STATEMANJS_STATE__;
+        return this.#statemanjsBaseService.get();
     }
 
     /**
@@ -93,66 +92,14 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
         subscriptionCb: SubscriptionCb<E>,
         subscriptionOptions: SubscriptionOptions<E> = {},
     ): UnsubscribeCb {
-        const subscriberId = this.#statemanjsBaseService.generateSubscriberId();
-
-        const notifyConditionCb = subscriptionOptions.notifyCondition;
-
-        if (
-            subscriptionOptions.properties &&
-            subscriptionOptions.properties.length > 0
-        ) {
-            this.#statemanjsBaseService.isNeedToCheckProperties = true;
-        }
-
-        this.#statemanjsBaseService.addSubscriber({
-            subId: subscriberId,
-            subCb: () => subscriptionCb(this.get()),
-            notifyCondition: (): boolean => {
-                if (subscriptionOptions.properties) {
-                    if (!this.#statemanjsBaseService.isObject(this.unwrap())) {
-                        throw new Error(
-                            "You can't add properties to track if your state is not an object",
-                        );
-                    }
-
-                    try {
-                        return this.#statemanjsBaseService.isAnyPropertyPartOfAnyPath(
-                            subscriptionOptions.properties as string[],
-                            this.#statemanjsBaseService.getPathToChangedProperty(),
-                        );
-                    } catch (error) {
-                        throw new Error(
-                            formatError(
-                                "An error occurred when accessing a property from the subscriptionOptions list",
-                                error,
-                            ),
-                        );
-                    }
-                }
-
-                return (
-                    notifyConditionCb === undefined ||
-                    notifyConditionCb(this.get())
-                );
-            },
-            isProtected: subscriptionOptions.protect ?? false,
-        });
-
-        return (): void => {
-            if (
-                !subscriptionOptions.properties ||
-                subscriptionOptions.properties.length === 0
-            ) {
-                this.#statemanjsBaseService.isNeedToCheckProperties = false;
-            }
-
-            this.#statemanjsBaseService.unsubscribeById(subscriberId);
-        };
+        return this.#statemanjsBaseService.subscribe(
+            subscriptionCb,
+            subscriptionOptions,
+        );
     }
 
     /** Remove all unprotected subscribers */
     unsubscribeAll(): void {
-        this.#statemanjsBaseService.isNeedToCheckProperties = false;
         this.#statemanjsBaseService.unsubscribeAll();
     }
 
@@ -168,30 +115,26 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
      * Flexible state update.
      * @param updateCb Callback for state updates.
      */
-    update(updateCb: UpdateCb<E>): boolean {
+    update(updateCb: UpdateCb<E>, options: UpdateOptions<E> = {}): boolean {
         try {
-            this.#statemanjsBaseService.setAcionKindToUpdate();
-            this.#statemanjsBaseService.allowAccessToState();
-            updateCb(this.get());
-            this.#statemanjsBaseService.denyAccessToState();
+            const wasChanged = this.#statemanjsBaseService.update(updateCb, {
+                afterUpdate: (): void => {
+                    if (this.DEBUG !== undefined) {
+                        this.DEBUG.transactionService.addTransaction(
+                            this.unwrap(),
+                        );
+                    }
+                },
+                ...options,
+            });
 
-            if (!this.#statemanjsBaseService.getWasChanged()) {
-                return false;
-            }
-
-            if (this.DEBUG !== undefined) {
-                this.DEBUG.transactionService.addTransaction(this.unwrap());
-            }
-
-            this.#statemanjsBaseService.setWasChangedToFalse();
-            this.#statemanjsBaseService.runActiveSubscribersCb();
-            this.#statemanjsBaseService.resetPathToChangedProperty();
-            this.#statemanjsBaseService.setAcionKindToNone();
-
-            return true;
+            return wasChanged;
         } catch (error) {
             throw new Error(
-                formatError("An error occurred while update the state", error),
+                formatError(
+                    "An error occurred while updating the state",
+                    error,
+                ),
             );
         }
     }
@@ -201,11 +144,7 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
      * @returns unwrapped state
      */
     unwrap(): E {
-        this.#statemanjsBaseService.allowUnwrap();
-        const unwrapped = this.get();
-        this.#statemanjsBaseService.denyUnwrap();
-
-        return unwrapped;
+        return this.#statemanjsBaseService.unwrap();
     }
 
     /**
@@ -233,30 +172,30 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
      * @param selectorFn A function that returns a value of a state property.
      * @returns A computed state.
      */
-    createSelector<T>(selectorFn: (state: E) => T): StatemanjsComputedAPI<T> {
+    createSelector<T>(
+        selectorFn: (state: E) => T,
+        subscriptionOptions: SubscriptionOptions<any> = {},
+    ): StatemanjsComputedAPI<T> {
         const selector = (): T => selectorFn(this.get());
-        return new StatemanjsComputedService<T>(selector, [this]);
+        return new StatemanjsComputedService<T>(selector, [this], {
+            debugService: this.DEBUG,
+            customComparator: this.#statemanjsBaseService.customComparator,
+            defaultComparator: this.#statemanjsBaseService.defaultComparator,
+            ...subscriptionOptions,
+        });
     }
 }
 
 export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
+    #statemanjs: StatemanjsAPI<T>;
+
     constructor(
         callback: () => T,
         deps: (StatemanjsAPI<any> | StatemanjsComputedAPI<any>)[],
+        options: StatemanjsComputedServiceOptions<any>,
     ) {
         if (!deps.length) {
-            throw new Error("");
-        }
-
-        this.#statemanjs = new StatemanjsService<T>(callback());
-
-        for (const d of deps) {
-            d.subscribe(
-                (): void => {
-                    this.#statemanjs.set(callback());
-                },
-                { protect: true },
-            );
+            throw new Error("No dependencies provided");
         }
 
         // Bindings
@@ -266,9 +205,27 @@ export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
         this.getActiveSubscribersCount =
             this.getActiveSubscribersCount.bind(this);
         this.unwrap = this.unwrap.bind(this);
-    }
 
-    #statemanjs: StatemanjsAPI<T>;
+        this.#statemanjs = new StatemanjsService<T>(callback(), {
+            debugService: options.debugService,
+            customComparator: options.customComparator,
+            defaultComparator: options.defaultComparator,
+        });
+
+        for (const d of deps) {
+            d.subscribe(
+                (): void => {
+                    this.#statemanjs.set(callback());
+                },
+                {
+                    notifyCondition: options.notifyCondition,
+                    protect:
+                        options.protect === undefined ? true : options.protect,
+                    properties: options.properties,
+                },
+            );
+        }
+    }
 
     /** Get current state */
     get(): T {

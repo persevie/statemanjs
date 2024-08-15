@@ -1,12 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+import { DebugAPI } from "./api/debugAPI";
+
 /** Wrapper for the ability to save entities other than an object or array. */
-export type StateWrapper<T> = { __STATEMANJS_STATE__: T };
+export type StatemanjsStateWrapper<T> = {
+    __STATEMANJS_STATE__: T;
+};
 
 /**
  * Subscriber object for internal use.
  */
 export type Subscriber = {
-    subId: string;
+    subId: symbol;
     subCb: () => void;
     /**
      * To determine whether subscribers need to be notified of a status change.
@@ -42,13 +47,30 @@ export type SubscriptionOptions<T> = {
 
 export type ActionKind = "update" | "set" | "none";
 
-export type Transaction<T> = {
-    number: number;
-    snapshot: T;
-    timestamp: number;
+export type CustomComparator<T> = (a: T, b: T) => boolean;
+
+export type DefaultComparator = "none" | "ref" | "shallow" | "custom";
+
+export type StatemanjsServiceOptions<T> = {
+    debugService?: DebugAPI<T>;
+    customComparator?: CustomComparator<T>;
+    defaultComparator?: DefaultComparator;
 };
 
-export type TransactionDiff<T> = {
-    old: T;
-    new: T;
+export type StatemanjsComputedServiceOptions<T> = StatemanjsServiceOptions<T> &
+    SubscriptionOptions<T>;
+
+type BaseModifyOptions<T> = {
+    skipComparison?: boolean;
+    comparatorOverride?: DefaultComparator;
+    customComparatorOverride?: CustomComparator<T>;
+    afterUpdate: () => void;
 };
+
+export type BaseSetOptions<T> = BaseModifyOptions<T>;
+
+export type BaseUpdateOptions<T> = BaseModifyOptions<T>;
+
+export type SetOptions<T> = Omit<BaseModifyOptions<T>, "afterUpdate">;
+
+export type UpdateOptions<T> = Omit<BaseModifyOptions<T>, "afterUpdate">;

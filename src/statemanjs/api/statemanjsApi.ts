@@ -3,6 +3,8 @@ import {
     SubscriptionOptions,
     UnsubscribeCb,
     UpdateCb,
+    UpdateOptions,
+    SetOptions,
 } from "../entities";
 import { DebugAPI } from "./debugAPI";
 import { StatemanjsComputedAPI } from "./statemanjsComputedAPI";
@@ -18,7 +20,7 @@ export interface StatemanjsAPI<T> {
      * @param newState New state.
      * @returns Status of operation.
      */
-    set(newState: T): boolean;
+    set(newState: T, options?: SetOptions<T>): boolean;
 
     /** Get current state */
     get(): T;
@@ -55,7 +57,7 @@ export interface StatemanjsAPI<T> {
      * Flexible state update.
      * @param updateCb Callback for state updates.
      */
-    update(updateCb: UpdateCb<T>, currentState?: T): void;
+    update(updateCb: UpdateCb<T>, options?: UpdateOptions<T>): boolean;
 
     /**
      * Unwrap a proxy object to a regular JavaScript object
@@ -78,7 +80,10 @@ export interface StatemanjsAPI<T> {
      * @param selectorFn A function that returns a value of a state property.
      * @returns A computed state.
      */
-    createSelector<E>(selectorFn: (state: T) => E): StatemanjsComputedAPI<E>;
+    createSelector<E>(
+        selectorFn: (state: T) => E,
+        subscriptionOptions?: SubscriptionOptions<unknown>,
+    ): StatemanjsComputedAPI<E>;
 
     /**
      * Debug API. Allows you to use additional debugging functionality such as transactions.

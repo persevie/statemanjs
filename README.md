@@ -3,9 +3,18 @@
 </p>
 
 [![codecov](https://codecov.io/gh/persevie/statemanjs/branch/main/graph/badge.svg?token=5NICXEETTY)](https://codecov.io/gh/persevie/statemanjs)
+[![npm version](https://img.shields.io/npm/v/@persevie/statemanjs)](https://www.npmjs.com/package/statemanjs)
+[![npm downloads](https://img.shields.io/npm/dm/@persevie/statemanjs)](https://www.npmjs.com/package/statemanjs)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@persevie/statemanjs)](https://bundlephobia.com/result?p=statemanjs)
+[![license](https://img.shields.io/npm/l/@persevie/statemanjs)](https://github.com/persevie/statemanjs/blob/main/LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/persevie/statemanjs?style=social)](https://github.com/persevie/statemanjs/stargazers)
 
 ```ts
-import { createState, createComputedState } from "@persevie/statemanjs";
+import {
+    createState,
+    createComputedState,
+    StatemanjsAPI,
+} from "@persevie/statemanjs";
 
 type Planet = {
     name: string;
@@ -198,7 +207,7 @@ marsExplorerState.set({
   - [Debug](#debug)
     - [Transactions](#transactions)
 - [Performance test](#performance-test)
-    - [Fill case.](#fill-case)
+  - [Fill case.](#fill-case)
 - [Integrations](#integrations)
 - [For contributors](#for-contributors)
 
@@ -206,17 +215,19 @@ marsExplorerState.set({
 
 # Introduction
 
-Statemanjs is a framework-agnostic library for creating and managing the state of your JavaScript and NodeJS applications.
+Statemanjs is a framework-agnostic library for managing state in JavaScript and NodeJS applications.
 
 Key features:
 
--   High performance: Statemanjs is designed to be fast and efficient, especially in large or complex applications.
--   Reliability: The library's strict API, read-only state links and reliance on mutability ensure that state changes are reliable and secure.
--   Clear API: Statemanjs has a clear and easy-to-use API, with methods for creating, updating, and subscribing to state changes.
--   Support for any data type as a state: Statemanjs can handle any data type as a state, including primitives, complex objects, and multidimensional arrays.
--   Framework-agnostic: Statemanjs can be used on its own without any additional packages, but it also has additional packages available for popular front-end frameworks such as React, Vue and Svelte.
--   TypeScript support: Statemanjs is written in TypeScript, which means it has excellent support for type checking and type inference.
--   Small size: Statemanjs has a tiny size of only less than 100KB, making it easy to include in your project without being too big.
+- **High Performance:** Statemanjs is built for speed and efficiency, particularly in large or complex applications. Recent updates have further optimized state management and subscription handling, ensuring top-tier performance.
+- **Reliability:** With a strict API, immutable state management, and enhanced error handling, Statemanjs ensures that state changes are both reliable and secure.
+- **Flexible API:** Statemanjs offers a clear, user-friendly API, now expanded with custom comparators, advanced subscription options, and enhanced computed state management. These additions make the library even more powerful and adaptable.
+- **Versatile State Support:** Statemanjs can manage any data type as state, including primitives, complex objects, and multidimensional arrays, offering great versatility.
+- **Framework-Agnostic:** While Statemanjs works independently, it also has packages available for popular front-end frameworks such as React, Vue, and Svelte, making it easy to integrate into a wide range of projects.
+- **TypeScript-Ready:** Written in TypeScript, Statemanjs provides excellent type checking and inference, ensuring robustness and ease of integration into TypeScript projects.
+- **Lightweight:** Despite its power, Statemanjs remains lightweight, with a bundle size of just 11.9 kB minified (3.1 kB minified and gzipped), keeping your project lean.
+
+These features make Statemanjs a compelling choice for state management in modern JavaScript and TypeScript applications, combining performance, flexibility, and ease of use.
 
 # API
 
@@ -224,19 +235,13 @@ Any manipulations with your state are possible only through built-in methods, so
 The `createState` method is used to create a state:
 
 ```ts
-createState<T>(element: T): StatemanjsAPI<T>;
-```
-
-`StatemanjsAPI<T>`
-
-```ts
- /**
+/**
  * Accepts a new state and compares it with the current one.
  * Nothing will happen if the passed value is equal to the current one.
  * @param newState New state.
  * @returns Status of operation.
  */
-set(newState: T): boolean;
+set(newState: T, options?: SetOptions<T>): boolean;
 
 /** Get current state */
 get(): T;
@@ -273,7 +278,7 @@ getActiveSubscribersCount(): number;
  * Flexible state update.
  * @param updateCb Callback for state updates.
  */
-update(updateCb: UpdateCb<T>, currentState?: T): void;
+update(updateCb: UpdateCb<T>, options?: UpdateOptions<T>): boolean;
 
 /**
  * Unwrap a proxy object to a regular JavaScript object
@@ -296,7 +301,10 @@ asyncAction(
  * @param selectorFn A function that returns a value of a state property.
  * @returns A computed state.
  */
-createSelector<E>(selectorFn: (state: T) => E): StatemanjsComputedAPI<E>;
+createSelector<E>(
+    selectorFn: (state: T) => E,
+    subscriptionOptions?: SubscriptionOptions<unknown>,
+): StatemanjsComputedAPI<E>;
 
 /**
  * Debug API. Allows you to use additional debugging functionality such as transactions.
@@ -356,24 +364,53 @@ unwrap(): T;
 
 ```ts
 /**
- * Number of transactions since state initialization
+ * The total number of transactions that have occurred since the state was initialized.
  */
 totalTransactions: number;
 
 /**
- * Add transaction to the chain
- * @param snapshot
+ * Adds a new transaction to the transaction chain.
+ *
+ * @param {T} snapshot - The snapshot of the state to be added as a transaction.
  */
 addTransaction(snapshot: T): void;
 
+/**
+ * Retrieves the last transaction in the transaction chain.
+ *
+ * @returns {Transaction<T> | null} The last transaction, or null if there are no transactions.
+ */
 getLastTransaction(): Transaction<T> | null;
 
+/**
+ * Retrieves all transactions that have occurred.
+ *
+ * @returns {Transaction<T>[]} An array of all transactions.
+ */
 getAllTransactions(): Transaction<T>[];
 
+/**
+ * Retrieves a specific transaction by its number in the transaction chain.
+ *
+ * @param {number} transactionNumber - The number of the transaction to retrieve.
+ * @returns {Transaction<T> | null} The transaction with the specified number, or null if it doesn't exist.
+ */
 getTransactionByNumber(transactionNumber: number): Transaction<T> | null;
 
+/**
+ * Retrieves the difference between the current state and the last transaction.
+ *
+ * @returns {TransactionDiff<T> | null} The difference between the current state and the last transaction, or null if there are no transactions.
+ */
 getLastDiff(): TransactionDiff<T> | null;
 
+/**
+ * Retrieves the difference between two specific transactions.
+ *
+ * @param {number} transactionA - The number of the first transaction.
+ * @param {number} transactionB - The number of the second transaction.
+ * @returns {TransactionDiff<T> | null} The difference between the two specified transactions, or null if the transactions don't exist or there is no difference.
+ */
 getDiffBetween(
     transactionA: number,
     transactionB: number,
@@ -610,8 +647,8 @@ const unwrappedUser = userState.unwrap();
 You can create a computed state with the `createComputedState` function. It returns an instance of statemanjs, but without the ability to set or update the state because of its specificity (_see the `StatemanjsComputedAPI` interface_).
 This function takes two parameters:
 
--   A callback function to create a state value (_run when at least one of the dependencies has been changed_).
--   An array of dependencies (_an instance of statemanjs_).
+- A callback function to create a state value (_run when at least one of the dependencies has been changed_).
+- An array of dependencies (_an instance of statemanjs_).
 
 Computed state creates only protected subscribers.
 
@@ -801,11 +838,92 @@ te().then(() => {
 });
 ```
 
+## Custom Comparators
+
+`Statemanjs` allows you to define custom comparator functions that determine how the state should be compared before it is updated. This feature is particularly useful when you need more control over the conditions under which the state is considered "changed."
+
+### Using Custom Comparators
+
+When creating a state object with `createState` or a computed state with `createComputedState`, you can provide a `customComparator` as part of the `StatemanjsServiceOptions`. This custom comparator will be used if you set the `defaultComparator` to `"custom"`.
+
+#### Example
+
+```ts
+import { createState } from "@persevie/statemanjs";
+import _ from "lodash";
+
+const state = createState(
+    { name: "Finn", age: 13 },
+    {
+        defaultComparator: "custom",
+        customComparator: (a, b) => _.isEqual(a, b),
+    },
+);
+
+
+state.update((currentState) => {
+currentState.age = 14;
+});
+```
+
+In this example, the `_.isEqual` function from lodash is used to perform deep equality checks on the state. The state will only be updated if the custom comparator determines that the new state is different from the current state.
+
+Overriding Comparators in set and update
+You can override the global comparator behavior in individual set or update operations by using the SetOptions and UpdateOptions respectively. This allows you to temporarily use a different comparator or skip comparison entirely for a specific operation.
+
+**Options:**
+
+- `skipComparison`: If set to true, the state will be updated without any comparison.
+- `comparatorOverride`: Overrides the global `defaultComparator` for this operation. You can use "none", "ref", "shallow", or "custom".
+- `customComparatorOverride`: Provides a custom comparator to be used for this operation, but it only applies if comparatorOverride or the global
+- `defaultComparator` is set to "custom".
+
+#### Example
+
+```ts
+state.update(
+    (currentState) => {
+        currentState.age = 15;
+    },
+    {
+        comparatorOverride: "custom",
+        customComparatorOverride: (a, b) => a.age === b.age,
+    },
+);
+```
+
+In this example, the state will only update if the age property is different, as defined by the `customComparatorOverride`. This comparator override is only effective because comparatorOverride is explicitly set to "custom".
+
+Here are the available defaultComparator options:
+
+- "none": The state will be modified without any comparison.
+- "ref": The state will be modified if the new state is a different reference from the current state.
+- "shallow": The state will be modified based on a shallow comparison, where only the first level of properties is compared.
+
+By default, Statemanjs will use "ref" if no defaultComparator is specified.
+
+#### Example Usage of Default Comparators
+
+```ts
+const state = createState(
+    { name: "Jake", age: 28 },
+    {
+        defaultComparator: "shallow",
+    },
+);
+
+state.set({ name: "Jake", age: 29 }); // Will update because age is different
+```
+
+In this example, shallow comparison is used, meaning the state will only update if any of the top-level properties have changed.
+
+This flexibility allows you to optimize performance and control how your application responds to state changes.
+
 # Performance test
 
 > The examples of storage implementations for each state-manager (except statemanjs) were taken from the official documentation of these libraries.
 
-### Fill case.
+## Fill case
 
 One by one adds `n` elements to the array `x` times. Where `n` is a number from the array of numbers [1, 10, 100, 1000, 10000, 100000, 1000000, 2000000, 5000000, 10000000,
 50000000] ([countOfElements](https://github.com/persevie/statemanjs/blob/main/benchmarks/cases/shared.mjs)), and `x` is the number of iterations (1 by default). If `n = 5; x = 2`, that means to add `5` elements `2` times. The `element` is an object `{foo: "bar", baz: "qux"}`. Between iterations the storage is reset (empty array).
@@ -821,7 +939,6 @@ Read more about it [here](https://github.com/persevie/statemanjs/blob/main/bench
 Below is a table with the results of the **fill** benchmark.
 
 > time in `ms`
-
 > ❌ - means an error during execution or too long execution time (>6h).
 
 <table>
@@ -926,3 +1043,7 @@ To work with additional packages, the main statemanjs package is required.
 # For contributors
 
 See [CONTRIBUTING.md](https://github.com/persevie/statemanjs/blob/main/CONTRIBUTING.md).
+
+```
+
+```
