@@ -3,9 +3,9 @@
 </p>
 
 [![codecov](https://codecov.io/gh/persevie/statemanjs/branch/main/graph/badge.svg?token=5NICXEETTY)](https://codecov.io/gh/persevie/statemanjs)
-[![npm version](https://img.shields.io/npm/v/@persevie/statemanjs)](https://www.npmjs.com/package/statemanjs)
-[![npm downloads](https://img.shields.io/npm/dm/@persevie/statemanjs)](https://www.npmjs.com/package/statemanjs)
-[![bundle size](https://img.shields.io/bundlephobia/minzip/@persevie/statemanjs)](https://bundlephobia.com/result?p=statemanjs)
+[![npm version](https://img.shields.io/npm/v/@persevie/statemanjs)](https://www.npmjs.com/package/@persevie/statemanjs)
+[![npm downloads](https://img.shields.io/npm/dm/@persevie/statemanjs)](https://www.npmjs.com/package/@persevie/statemanjs)
+[![bundle size](https://img.shields.io/bundlephobia/minzip/@persevie/statemanjs)](https://bundlephobia.com/result?p=@persevie/statemanjs)
 [![license](https://img.shields.io/npm/l/@persevie/statemanjs)](https://github.com/persevie/statemanjs/blob/main/LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/persevie/statemanjs?style=social)](https://github.com/persevie/statemanjs/stargazers)
 
