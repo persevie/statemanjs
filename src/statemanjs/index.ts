@@ -7,7 +7,7 @@ import {
     CustomComparator,
     DefaultComparator,
     SubscriptionOptions,
-} from "./entities";
+} from "./shared/entities";
 import { DebugService } from "./service/debugService";
 import {
     StatemanjsService,
@@ -19,6 +19,7 @@ export type StatemanjsOptions<T> = {
     transactionsLen?: number;
     customComparator?: CustomComparator<T>;
     defaultComparator?: DefaultComparator;
+    batch?: boolean;
 };
 
 export function createState<T>(
@@ -37,13 +38,14 @@ export function createState<T>(
         debugService,
         customComparator: options?.customComparator,
         defaultComparator: options?.defaultComparator,
+        batch: options?.batch,
     });
 }
 
 export function createComputedState<T>(
     callback: () => T,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    deps: StatemanjsAPI<any>[],
+    deps: (StatemanjsAPI<any> | StatemanjsComputedAPI<any>)[],
     options?: StatemanjsOptions<T>,
 ): StatemanjsComputedAPI<T> {
     return new StatemanjsComputedService<T>(callback, deps, {
@@ -56,6 +58,7 @@ export function createComputedState<T>(
                 : undefined,
         customComparator: options?.customComparator,
         defaultComparator: options?.defaultComparator,
+        batch: options?.batch,
     });
 }
 

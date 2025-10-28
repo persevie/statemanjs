@@ -12,9 +12,10 @@ import {
     UnsubscribeCb,
     UpdateCb,
     UpdateOptions,
-} from "../entities";
-import { formatError } from "../utility";
+} from "../shared/entities";
 import { StatemanjsBaseService } from "./statemanjsBaseService";
+import { scheduleComputedRecompute } from "../shared/computedScheduler";
+import { formatError } from "../shared/utility";
 
 export class StatemanjsService<E> implements StatemanjsAPI<E> {
     #statemanjsBaseService: StatemanjsBaseAPI<E>;
@@ -35,6 +36,7 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
         this.#statemanjsBaseService = new StatemanjsBaseService(element, {
             customComparator: options.customComparator,
             defaultComparator: options.defaultComparator,
+            batch: options.batch,
         });
         this.DEBUG = options.debugService;
     }
@@ -188,6 +190,13 @@ export class StatemanjsService<E> implements StatemanjsAPI<E> {
 
 export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
     #statemanjs: StatemanjsAPI<T>;
+    #callback: () => T;
+    #isDirty = true; // Initially dirty (needs first computation)
+    #isComputing = false; // Cycle detection flag
+    #cachedValue?: T;
+    #hasSubscribers = false; // Track if there are real subscribers
+    #isScheduled = false; // Track whether recomputation is queued
+    readonly #flushCallback: () => void;
 
     constructor(
         callback: () => T,
@@ -198,6 +207,12 @@ export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
             throw new Error("No dependencies provided");
         }
 
+        this.#callback = callback;
+        this.#flushCallback = () => {
+            this.#isScheduled = false;
+            this.#flushIfNeeded();
+        };
+
         // Bindings
         this.get = this.get.bind(this);
         this.subscribe = this.subscribe.bind(this);
@@ -206,16 +221,19 @@ export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
             this.getActiveSubscribersCount.bind(this);
         this.unwrap = this.unwrap.bind(this);
 
-        this.#statemanjs = new StatemanjsService<T>(callback(), {
+        // Initialize with dummy value (will be computed lazily on first get())
+        this.#statemanjs = new StatemanjsService<T>(undefined as any, {
             debugService: options.debugService,
             customComparator: options.customComparator,
             defaultComparator: options.defaultComparator,
+            batch: options.batch,
         });
 
+        // Subscribe to dependencies - mark as dirty instead of recomputing immediately
         for (const d of deps) {
             d.subscribe(
                 (): void => {
-                    this.#statemanjs.set(callback());
+                    this.#markDirty();
                 },
                 {
                     notifyCondition: options.notifyCondition,
@@ -227,9 +245,94 @@ export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
         }
     }
 
+    /** Mark computed state as dirty (needs recomputation) */
+    #markDirty(): void {
+        this.#isDirty = true;
+
+        if (!this.#hasSubscribers) {
+            return;
+        }
+
+        if (this.#isScheduled) {
+            return;
+        }
+
+        this.#isScheduled = true;
+        scheduleComputedRecompute(this.#flushCallback);
+    }
+
+    #flushIfNeeded(): void {
+        if (!this.#hasSubscribers) {
+            return;
+        }
+
+        if (!this.#isDirty) {
+            return;
+        }
+
+        // Avoid re-entrancy while computing
+        if (this.#isComputing) {
+            // Leave as dirty; another flush will run after current computation
+            this.#isScheduled = true;
+            scheduleComputedRecompute(this.#flushCallback);
+            return;
+        }
+
+        const oldValue = this.#cachedValue;
+        const newValue = this.#computeIfNeeded();
+
+        if (oldValue !== newValue) {
+            this.#statemanjs.set(newValue, {
+                skipGenerationIncrement: true,
+            });
+        }
+    }
+
+    /** Compute value if dirty, otherwise return cached value */
+    #computeIfNeeded(): T {
+        if (!this.#isDirty && this.#cachedValue !== undefined) {
+            return this.#cachedValue;
+        }
+
+        // Cycle detection
+        if (this.#isComputing) {
+            throw new Error(
+                "Circular dependency detected in computed state. " +
+                    "A computed state cannot depend on itself directly or indirectly.",
+            );
+        }
+
+        this.#isComputing = true;
+        try {
+            this.#cachedValue = this.#callback();
+            this.#isDirty = false;
+            return this.#cachedValue;
+        } finally {
+            this.#isComputing = false;
+        }
+    }
+
     /** Get current state */
     get(): T {
-        return this.#statemanjs.get();
+        // Lazy evaluation: compute only when accessed and if dirty
+        if (this.#isDirty) {
+            const oldValue = this.#cachedValue;
+            const newValue = this.#computeIfNeeded();
+
+            this.#isScheduled = false;
+
+            // Notify subscribers if value changed
+            if (oldValue !== newValue) {
+                // Skip generation increment - not from a base state change
+                this.#statemanjs.set(newValue, {
+                    skipGenerationIncrement: true,
+                });
+            }
+
+            return newValue;
+        }
+
+        return this.#cachedValue!;
     }
 
     /**
@@ -250,12 +353,33 @@ export class StatemanjsComputedService<T> implements StatemanjsComputedAPI<T> {
         subscriptionCb: SubscriptionCb<T>,
         subscriptionOptions?: SubscriptionOptions<T> | undefined,
     ): UnsubscribeCb {
-        return this.#statemanjs.subscribe(subscriptionCb, subscriptionOptions);
+        if (!this.#hasSubscribers) {
+            this.#hasSubscribers = true;
+
+            if (this.#isDirty && !this.#isScheduled) {
+                this.#isScheduled = true;
+                scheduleComputedRecompute(this.#flushCallback);
+            }
+        }
+
+        const unsubscribe = this.#statemanjs.subscribe(
+            subscriptionCb,
+            subscriptionOptions,
+        );
+
+        // Wrap unsubscribe to update flag
+        return () => {
+            unsubscribe();
+            // Update flag if no more subscribers
+            this.#hasSubscribers =
+                this.#statemanjs.getActiveSubscribersCount() > 0;
+        };
     }
 
     /** Remove all unprotected subscribers */
     unsubscribeAll(): void {
         this.#statemanjs.unsubscribeAll();
+        this.#hasSubscribers = this.#statemanjs.getActiveSubscribersCount() > 0;
     }
 
     /**

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { formatError } from "../utility";
+
+import { formatError } from "../shared/utility";
 import {
     StatemanjsAPI,
     StatemanjsComputedAPI,
@@ -266,6 +266,7 @@ describe("Statemanjs API", () => {
         unwrappedPlanet.name = "Earth"; // fix typo
 
         expect(unwrappedPlanet.name).toBe("Earth");
+        expect(planetState.get().name).toBe("earth");
     });
 
     test("it should unwrap deep state", () => {
@@ -527,6 +528,152 @@ describe("Statemanjs API", () => {
 
         expect(count).toBe(1);
         expect(planetNameSelectorState.get()).toBe("Earth");
+    });
+
+    test("it should track changes via array find() method", () => {
+        type TodoState = {
+            todos: Array<{ id: number; text: string; completed: boolean }>;
+        };
+
+        const state = createState<TodoState>({
+            todos: [
+                { id: 1, text: "First", completed: false },
+                { id: 2, text: "Second", completed: false },
+            ],
+        });
+
+        let notificationCount = 0;
+        state.subscribe(() => {
+            notificationCount++;
+        });
+
+        state.update((draft) => {
+            const found = draft.todos.find((t) => t.id === 1);
+            if (found) {
+                found.completed = true;
+            }
+        });
+
+        expect(notificationCount).toBe(1);
+        expect(state.get().todos[0].completed).toBe(true);
+        expect(state.get().todos[1].completed).toBe(false);
+    });
+
+    test("it should track changes via array filter() method", () => {
+        type TodoState = {
+            todos: Array<{ id: number; text: string; completed: boolean }>;
+        };
+
+        const state = createState<TodoState>({
+            todos: [
+                { id: 1, text: "Active 1", completed: false },
+                { id: 2, text: "Completed", completed: true },
+                { id: 3, text: "Active 2", completed: false },
+            ],
+        });
+
+        let notificationCount = 0;
+        state.subscribe(() => {
+            notificationCount++;
+        });
+
+        state.update((draft) => {
+            const active = draft.todos.filter((t) => !t.completed);
+            active.forEach((todo) => {
+                todo.completed = true;
+            });
+        });
+
+        expect(notificationCount).toBe(1);
+        expect(state.get().todos.every((t) => t.completed)).toBe(true);
+    });
+
+    test("it should track changes via array map() method", () => {
+        type TodoState = {
+            todos: Array<{ id: number; text: string; completed: boolean }>;
+        };
+
+        const state = createState<TodoState>({
+            todos: [
+                { id: 1, text: "Todo 1", completed: false },
+                { id: 2, text: "Todo 2", completed: false },
+            ],
+        });
+
+        let notificationCount = 0;
+        state.subscribe(() => {
+            notificationCount++;
+        });
+
+        state.update((draft) => {
+            const mapped = draft.todos.map((t) => t);
+            if (mapped[0]) {
+                mapped[0].completed = true;
+            }
+        });
+
+        expect(notificationCount).toBe(1);
+        expect(state.get().todos[0].completed).toBe(true);
+        expect(state.get().todos[1].completed).toBe(false);
+    });
+
+    test("it should track changes via array at() method", () => {
+        type TodoState = {
+            todos: Array<{ id: number; text: string; completed: boolean }>;
+        };
+
+        const state = createState<TodoState>({
+            todos: [
+                { id: 1, text: "First", completed: false },
+                { id: 2, text: "Second", completed: false },
+            ],
+        });
+
+        let notificationCount = 0;
+        state.subscribe(() => {
+            notificationCount++;
+        });
+
+        state.update((draft) => {
+            const item = draft.todos.at(0);
+            if (item) {
+                item.completed = true;
+            }
+        });
+
+        expect(notificationCount).toBe(1);
+        expect(state.get().todos[0].completed).toBe(true);
+    });
+
+    test("it should track changes via array slice() method", () => {
+        type TodoState = {
+            todos: Array<{ id: number; text: string; completed: boolean }>;
+        };
+
+        const state = createState<TodoState>({
+            todos: [
+                { id: 1, text: "First", completed: false },
+                { id: 2, text: "Second", completed: false },
+                { id: 3, text: "Third", completed: false },
+            ],
+        });
+
+        let notificationCount = 0;
+        state.subscribe(() => {
+            notificationCount++;
+        });
+
+        state.update((draft) => {
+            const sliced = draft.todos.slice(0, 2);
+            sliced.forEach((todo) => {
+                todo.completed = true;
+            });
+        });
+
+        expect(notificationCount).toBe(1);
+        expect(state.get().todos[0].completed).toBe(true);
+        expect(state.get().todos[1].completed).toBe(true);
+        expect(state.get().todos[2].completed).toBe(false);
     });
 });
 

@@ -7,7 +7,7 @@ import {
     UnsubscribeCb,
     UpdateCb,
     BaseUpdateOptions,
-} from "../entities";
+} from "../shared/entities";
 
 /**
  * Private, base API for statemanjs.

@@ -5,7 +5,7 @@ import {
     UpdateCb,
     UpdateOptions,
     SetOptions,
-} from "../entities";
+} from "../shared/entities";
 import { DebugAPI } from "./debugAPI";
 import { StatemanjsComputedAPI } from "./statemanjsComputedAPI";
 

@@ -11,8 +11,10 @@ import {
     CustomComparator,
     DefaultComparator,
     BaseSetOptions,
-} from "../entities";
-import { formatError, getErrorMessage } from "../utility";
+} from "../shared/entities";
+import { deepClone, formatError, getErrorMessage } from "../shared/utility";
+import { flushScheduledComputed } from "../shared/computedScheduler";
+import { UpdateGeneration } from "../shared/updateGeneration";
 
 export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
     /**
@@ -25,6 +27,17 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
      * A map of active subscribers identified by a unique symbol.
      */
     #activeSubscribers: Record<symbol, Subscriber> = {};
+
+    /**
+     * FinalizationRegistry for automatic cleanup of garbage-collected subscribers.
+     * When a subscriber callback is garbage collected, this automatically removes it.
+     */
+    #subscriberRegistry?: FinalizationRegistry<symbol>;
+
+    /**
+     * Map of subscriber IDs to their callback functions for FinalizationRegistry.
+     */
+    #subscriberCallbacks: Map<symbol, Function> = new Map();
 
     /**
      * Indicates if properties should be checked for changes.
@@ -63,8 +76,34 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
 
     /**
      * Cache for storing previously created proxies for properties in the state.
+     * Uses WeakMap for automatic garbage collection when objects are no longer referenced.
      */
-    #proxyCache: Map<string, any>;
+    #proxyCache: WeakMap<object, any>;
+
+    /**
+     * Flag indicating if the state is a primitive type (fast-path optimization).
+     */
+    #isPrimitiveState = false;
+
+    /**
+     * Direct storage for primitive values (bypasses Proxy).
+     */
+    #primitiveValue?: T;
+
+    /**
+     * Precompiled comparator function (avoids switch in hot path).
+     */
+    #compareFn: (a: any, b: any) => boolean;
+
+    /**
+     * Flag indicating if batching is enabled for subscriber notifications.
+     */
+    #batchingEnabled = false;
+
+    /**
+     * Flag indicating if a notification is pending in the microtask queue.
+     */
+    #pendingNotification = false;
 
     /**
      * Set of method names considered dangerous, which should be guarded during state modifications.
@@ -85,6 +124,22 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
         "splice", // (Array)
     ]);
 
+    /**
+     * Set of array methods that return elements which need to be proxied.
+     * These are non-mutating methods that access array elements.
+     */
+    readonly #arrayAccessorMethods: Set<string> = new Set([
+        "find", // Returns single element
+        "filter", // Returns array of elements
+        "map", // Returns array of transformed elements
+        "flatMap", // Returns flattened array
+        "slice", // Returns array slice
+        "concat", // Returns concatenated array
+        "reduce", // Can return elements during iteration
+        "reduceRight", // Can return elements during iteration
+        "at", // Returns single element by index
+    ]);
+
     readonly customComparator: CustomComparator<T> | undefined;
 
     readonly defaultComparator: DefaultComparator;
@@ -94,6 +149,7 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
         options: {
             customComparator?: CustomComparator<T>;
             defaultComparator?: DefaultComparator;
+            batch?: boolean;
         },
     ) {
         // Bindings
@@ -116,13 +172,60 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
         // Initialize default comparator
         this.defaultComparator = options.defaultComparator || "ref";
 
-        // Initialize cache for proxies
-        this.#proxyCache = new Map();
+        // Initialize batching mode
+        this.#batchingEnabled = options.batch || false;
 
-        // Wrap and proxy the state
+        // Initialize FinalizationRegistry for automatic subscriber cleanup
+        if (typeof FinalizationRegistry !== "undefined") {
+            this.#subscriberRegistry = new FinalizationRegistry(
+                (subscriberId: symbol) => {
+                    // Automatically remove subscriber when callback is garbage collected
+                    if (this.#activeSubscribers[subscriberId]) {
+                        delete this.#activeSubscribers[subscriberId];
+                    }
+                },
+            );
+        }
+
+        // Precompile comparator function (avoid switch in hot path)
+        switch (this.defaultComparator) {
+            case "ref":
+                this.#compareFn = (a: any, b: any) => a !== b;
+                break;
+            case "shallow":
+                this.#compareFn = (a: any, b: any) =>
+                    !this.#isEqualShallow(a, b);
+                break;
+            case "custom":
+                if (!this.customComparator) {
+                    throw new Error("Custom comparator is not provided.");
+                }
+                this.#compareFn = (a: any, b: any) =>
+                    !this.customComparator!(a, b);
+                break;
+            case "none":
+            default:
+                this.#compareFn = () => true;
+                break;
+        }
+
+        // Check if state is primitive (fast-path optimization)
+        if (this.#isPrimitive(element)) {
+            this.#isPrimitiveState = true;
+            this.#primitiveValue = element;
+            // Skip Proxy creation for primitives
+            this.#proxyCache = new WeakMap();
+            this.#proxiedState = {} as any; // Dummy value, never accessed
+            return;
+        }
+
+        // Initialize cache for proxies (WeakMap for automatic GC)
+        this.#proxyCache = new WeakMap();
+
+        // Wrap and proxy the state (start with empty path string)
         this.#proxiedState = new Proxy<StatemanjsStateWrapper<T>>(
             { __STATEMANJS_STATE__: element } as StatemanjsStateWrapper<T>,
-            this.#createHandler([]),
+            this.#createHandler(""),
         );
     }
 
@@ -147,50 +250,51 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
     }
 
     /**
-     * Saves the slot of a target property, binding functions if necessary.
+     * Converts a property key to string, handling symbols correctly.
      *
-     * @param {any} target - The target object.
-     * @param {any} prop - The property to be accessed.
-     * @returns {any} The value of the target's property, bound if it's a function.
+     * @param {string | symbol} prop - The property key.
+     * @returns {string} The stringified property.
      */
-    #saveSlots(target: any, prop: any): any {
-        return target && typeof target[prop] == "function"
-            ? target[prop].bind(target)
-            : target[prop];
-    }
-
-    /**
-     * Converts a property path array to a dot-separated string.
-     *
-     * @param {(string | symbol)[]} path - The array of path segments.
-     * @returns {string} The stringified path.
-     */
-    #stringifyPath(path: (string | symbol)[]): string {
-        let result = "";
-
-        for (let i = 0; i < path.length; i++) {
-            const p = path[i];
-            result += typeof p === "symbol" ? p.toString() : p;
-            if (i < path.length - 1) {
-                result += ".";
-            }
-        }
-
-        return result;
+    #propToString(prop: string | symbol): string {
+        return typeof prop === "symbol" ? prop.toString() : String(prop);
     }
 
     /**
      * Checks the access kind (function, object, etc.) and returns appropriate proxies or values.
+     * Optimized with fast-path for primitives (single typeof check).
+     * Uses string path representation - faster than arrays!
+     * Skips "__STATEMANJS_STATE__" wrapper in path for zero-overhead tracking!
      *
      * @param {any} target - The target object.
      * @param {any} prop - The property to access.
-     * @param {(string | symbol)[]} path - The path to the property.
+     * @param {string} path - The dot-separated path to the property.
      * @returns {any} The accessed value or a proxy of it.
      */
-    #checkAccessKind(target: any, prop: any, path: (string | symbol)[]): any {
+    #checkAccessKind(target: any, prop: any, path: string): any {
         const targetProp = target[prop];
-        const isFunc = typeof targetProp === "function";
-        const isObj = this.#isObject(targetProp) && targetProp !== null;
+        const propType = typeof targetProp;
+
+        // FAST-PATH: Primitives (99% cases on flat objects) - only ONE typeof check!
+        if (propType !== "object" && propType !== "function") {
+            return targetProp;
+        }
+
+        // null is typeof "object", so check it separately
+        if (targetProp === null) {
+            return targetProp;
+        }
+
+        const isFunc = propType === "function";
+
+        // Skip wrapper property in path to avoid prefix removal overhead!
+        // This way paths are clean from the start: "a.b.c" instead of "__STATEMANJS_STATE__.a.b.c"
+        const propStr = this.#propToString(prop);
+        const newPath =
+            propStr === "__STATEMANJS_STATE__"
+                ? path // Don't change path for wrapper property
+                : path
+                  ? `${path}.${propStr}`
+                  : propStr; // Normal concatenation for real properties
 
         if (isFunc) {
             if (
@@ -202,44 +306,85 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
                 );
             }
 
-            const newPath = path.concat(prop);
-
             if (this.#dangerMethods.has(prop)) {
                 this.#wasChanged = true;
-                this.#clearProxyCache(path);
             }
 
-            return new Proxy(
-                this.#saveSlots(target, prop),
-                this.#createHandler(newPath),
-            );
+            // Handle array accessor methods (find, filter, map, etc.)
+            // These methods return elements that need to be proxied
+            if (Array.isArray(target) && this.#arrayAccessorMethods.has(prop)) {
+                const originalMethod = targetProp.bind(target);
+                return (...args: any[]) => {
+                    const result = originalMethod(...args);
+
+                    // Wrap result(s) in proxy if needed
+                    if (result === null || result === undefined) {
+                        return result;
+                    }
+
+                    // For methods that return arrays (filter, map, slice, etc.)
+                    if (Array.isArray(result)) {
+                        return result.map((item: any) => {
+                            if (
+                                item &&
+                                typeof item === "object" &&
+                                !this.#isPrimitive(item)
+                            ) {
+                                // Check if this item is from our proxied array
+                                if (!this.#proxyCache.has(item)) {
+                                    const itemProxy = new Proxy(
+                                        item,
+                                        this.#createHandler(newPath),
+                                    );
+                                    this.#proxyCache.set(item, itemProxy);
+                                }
+                                return this.#proxyCache.get(item);
+                            }
+                            return item;
+                        });
+                    }
+
+                    // For methods that return single element (find, at, reduce)
+                    if (
+                        result &&
+                        typeof result === "object" &&
+                        !this.#isPrimitive(result)
+                    ) {
+                        if (!this.#proxyCache.has(result)) {
+                            const resultProxy = new Proxy(
+                                result,
+                                this.#createHandler(newPath),
+                            );
+                            this.#proxyCache.set(result, resultProxy);
+                        }
+                        return this.#proxyCache.get(result);
+                    }
+
+                    return result;
+                };
+            }
+
+            // Bind function directly without extra #saveSlots call
+            const boundFunc = targetProp.bind(target);
+            return new Proxy(boundFunc, this.#createHandler(newPath));
         }
 
-        if (isObj && !this.#isUnwrapAllowed) {
-            const newPath = path.concat(prop);
-            const stringifiedPath = this.#stringifyPath(newPath);
-
-            if (!this.#proxyCache.has(stringifiedPath)) {
+        // Here we know it's an object (not null, not primitive, not function)
+        if (!this.#isUnwrapAllowed) {
+            // Use the object itself as WeakMap key (automatic GC)
+            if (!this.#proxyCache.has(targetProp)) {
                 const newProxy = new Proxy(
-                    this.#saveSlots(target, prop),
+                    targetProp,
                     this.#createHandler(newPath),
                 );
-                this.#proxyCache.set(stringifiedPath, newProxy);
+                this.#proxyCache.set(targetProp, newProxy);
             }
 
-            return this.#proxyCache.get(stringifiedPath);
+            return this.#proxyCache.get(targetProp);
         }
 
-        return this.#saveSlots(target, prop);
-    }
-
-    #clearProxyCache(path: (string | symbol)[]): void {
-        const pathString = this.#stringifyPath(path);
-        for (const key of this.#proxyCache.keys()) {
-            if (key.startsWith(pathString)) {
-                this.#proxyCache.delete(key);
-            }
-        }
+        // For objects in unwrap mode, return directly
+        return targetProp;
     }
 
     #isEqualShallow(a: any, b: any): boolean {
@@ -262,23 +407,21 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
 
     /**
      * Updates a property in the state and marks the state as changed.
+     * No prefix removal needed! Path is already clean thanks to #checkAccessKind.
      *
      * @param {any} target - The target object.
      * @param {any} prop - The property to update.
      * @param {any} val - The new value to set.
-     * @param {any} newPath - The path to the property being updated.
+     * @param {string} newPath - The dot-separated path to the property being updated.
      */
-    #updateProperty(target: any, prop: any, val: any, newPath: any): void {
+    #updateProperty(target: any, prop: any, val: any, newPath: string): void {
         target[prop] = val;
         this.#wasChanged = true;
-        this.#clearProxyCache(newPath);
 
         if (this.#isNeedToCheckProperties && this.#actionKind === "update") {
-            const filteredPath = newPath.slice(1);
-            const pathString = this.#stringifyPath(filteredPath);
-
-            if (pathString.length) {
-                this.#addPathToChangedProperty(pathString);
+            // Path is already clean (e.g., "a", "a.b.c") - no prefix removal needed!
+            if (newPath.length > 0) {
+                this.#addPathToChangedProperty(newPath);
             }
         }
     }
@@ -292,25 +435,10 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
      * @returns {boolean} True if the property should be updated, otherwise false.
      */
     #isUpdateNeeded(target: any, prop: any, val: any): boolean {
-        switch (this.defaultComparator) {
-            case "ref":
-                return target[prop] !== val;
-            case "shallow":
-                return !this.#isEqualShallow(target[prop], val);
-            case "custom":
-                if (!this.customComparator) {
-                    throw new Error("Custom comparator is not provided.");
-                }
-                return !this.customComparator(target[prop], val);
-            case "none":
-            default:
-                return true;
-        }
+        return this.#compareFn(target[prop], val);
     }
 
-    #createHandler(
-        path: (string | symbol)[],
-    ): ProxyHandler<StatemanjsStateWrapper<T>> {
+    #createHandler(path: string): ProxyHandler<StatemanjsStateWrapper<T>> {
         return {
             get: (target: any, prop: any): any => {
                 return this.#checkAccessKind(target, prop, path);
@@ -320,7 +448,14 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
                     throw new Error("Access is denied.");
                 }
 
-                const newPath = path.concat(prop);
+                // Skip wrapper property in path (same logic as #checkAccessKind)
+                const propStr = this.#propToString(prop);
+                const newPath =
+                    propStr === "__STATEMANJS_STATE__"
+                        ? path // Don't change path for wrapper property
+                        : path
+                          ? `${path}.${propStr}`
+                          : propStr;
 
                 if (
                     this.#skipComparison ||
@@ -346,9 +481,15 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
                     return false;
                 }
 
-                const newPath = path.concat(prop);
+                // Skip wrapper property in path (same logic as #checkAccessKind)
+                const propStr = this.#propToString(prop);
+                const newPath =
+                    propStr === "__STATEMANJS_STATE__"
+                        ? path // Don't change path for wrapper property
+                        : path
+                          ? `${path}.${propStr}`
+                          : propStr;
                 delete target[prop as string];
-                this.#clearProxyCache(newPath);
                 return true;
             },
         };
@@ -364,7 +505,34 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
         return id;
     }
 
-    #runActiveSubscribersCb(): void {
+    #runActiveSubscribersCb(skipGenerationIncrement = false): void {
+        // Increment update generation before notifying subscribers
+        // This allows computed states to track if they've already processed this update
+        // Skip increment if requested (e.g., from computed states to avoid generation interference)
+        if (!skipGenerationIncrement) {
+            UpdateGeneration.increment();
+        }
+
+        if (!this.#batchingEnabled) {
+            // Synchronous notification (default behavior)
+            this.#notifySubscribersSync();
+            return;
+        }
+
+        // Batched notification via microtask queue
+        if (this.#pendingNotification) {
+            // Already scheduled, skip
+            return;
+        }
+
+        this.#pendingNotification = true;
+        queueMicrotask(() => {
+            this.#notifySubscribersSync();
+            this.#pendingNotification = false;
+        });
+    }
+
+    #notifySubscribersSync(): void {
         const activeSubscribers = this.#activeSubscribers;
         const inactiveSubscribersId: symbol[] = [];
 
@@ -389,6 +557,8 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
         if (inactiveSubscribersId.length > 0) {
             this.unsubscribeByIds(inactiveSubscribersId);
         }
+
+        flushScheduledComputed();
     }
 
     #isObject(entity: unknown): boolean {
@@ -443,11 +613,52 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
     }
 
     public get(): T {
+        if (this.#isPrimitiveState) {
+            return this.#primitiveValue!;
+        }
         return this.#proxiedState.__STATEMANJS_STATE__;
     }
 
     public set(newState: T, options: BaseSetOptions<T>): boolean {
+        // ULTRA-FAST path for primitives
+        if (this.#isPrimitiveState) {
+            // Inline comparison (avoid function call)
+            if (!options.skipComparison && this.#primitiveValue === newState) {
+                return false; // No change
+            }
+            this.#primitiveValue = newState;
+
+            // Inline afterUpdate check (avoid optional chaining overhead)
+            if (options.afterUpdate) {
+                options.afterUpdate();
+            }
+
+            // Inline subscriber notification (skip intermediate method calls)
+            // For primitives: no batching, no property tracking, no error handling
+            if (!options.skipGenerationIncrement) {
+                UpdateGeneration.increment();
+            }
+
+            const subscribers = this.#activeSubscribers;
+            const keys = Object.getOwnPropertySymbols(subscribers);
+
+            // HOT PATH: No try-catch, no condition checks for simple counters/flags
+            for (const id of keys) {
+                const s = subscribers[id];
+                // Most primitives don't have notifyCondition (simple counter/flag)
+                if (!s.notifyCondition || s.notifyCondition()) {
+                    s.subCb();
+                }
+            }
+
+            flushScheduledComputed();
+
+            return true;
+        }
+
+        // Standard path for objects (with error handling)
         try {
+            // Standard path for objects
             const wasChanged = this.#performSafeModification((): void => {
                 this.#skipComparison = options.skipComparison || false;
 
@@ -461,7 +672,7 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
             options.afterUpdate();
 
             this.#wasChanged = false;
-            this.#runActiveSubscribersCb();
+            this.#runActiveSubscribersCb(options.skipGenerationIncrement);
             this.#resetPathToChangedProperty();
             this.#actionKind = "none";
 
@@ -478,6 +689,14 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
 
     public update(updateCb: UpdateCb<T>, options: BaseSetOptions<T>): boolean {
         try {
+            // Fast-path for primitives (bypass Proxy)
+            if (this.#isPrimitiveState) {
+                throw new Error(
+                    "Cannot use 'update' method on primitive state. Use 'set' instead.",
+                );
+            }
+
+            // Standard path for objects
             const wasChanged = this.#performSafeModification((): void => {
                 this.#skipComparison = options.skipComparison || false;
 
@@ -491,7 +710,7 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
             options.afterUpdate();
 
             this.#wasChanged = false;
-            this.#runActiveSubscribersCb();
+            this.#runActiveSubscribersCb(options.skipGenerationIncrement);
             this.#resetPathToChangedProperty();
             this.#actionKind = "none";
 
@@ -555,6 +774,16 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
             isProtected: subscriptionOptions.protect ?? false,
         });
 
+        // Register callback in FinalizationRegistry for automatic cleanup
+        if (this.#subscriberRegistry) {
+            this.#subscriberCallbacks.set(subscriberId, subscriptionCb);
+            this.#subscriberRegistry.register(
+                subscriptionCb,
+                subscriberId,
+                subscriptionCb,
+            );
+        }
+
         return (): void => {
             if (!hasProperties) {
                 this.#isNeedToCheckProperties = false;
@@ -565,6 +794,16 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
     }
 
     public unsubscribeById(subscriberId: symbol): void {
+        // Unregister from FinalizationRegistry if exists
+        if (
+            this.#subscriberRegistry &&
+            this.#subscriberCallbacks.has(subscriberId)
+        ) {
+            const callback = this.#subscriberCallbacks.get(subscriberId);
+            this.#subscriberRegistry.unregister(callback!);
+            this.#subscriberCallbacks.delete(subscriberId);
+        }
+
         delete this.#activeSubscribers[subscriberId];
     }
 
@@ -596,11 +835,15 @@ export class StatemanjsBaseService<T> implements StatemanjsBaseAPI<T> {
     }
 
     public unwrap(): T {
+        if (this.#isPrimitiveState) {
+            return this.#primitiveValue!;
+        }
+
         this.#isUnwrapAllowed = true;
         const unwrapped = this.get();
         this.#isUnwrapAllowed = false;
 
-        return unwrapped;
+        return deepClone(unwrapped);
     }
 
     public getPathToChangedProperty(): string[] {

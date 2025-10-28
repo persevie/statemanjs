@@ -1,5 +1,5 @@
 const { execSync } = require("child_process");
-const getModuleNames = require("./getModuleNames");
+const getModuleNames = require("./getModuleNames.js");
 
 const providedModuleName = process.argv[2];
 
@@ -12,7 +12,7 @@ function test(moduleName) {
     // TODO: add tests for solidjs and remove this 'if' condition
     if (moduleName !== "statemanjs-solid") {
         console.log(`Testing ${moduleName}...`);
-        execSync(`jest --config=src/${moduleName}/jest.config.ts`, {
+        execSync(`jest --config=src/${moduleName}/jest.config.js`, {
             stdio: "inherit",
         });
     }

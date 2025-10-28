@@ -1,0 +1,849 @@
+{
+  "timestamp": "2025-10-28T11:07:06.239Z",
+  "config": {
+    "warmupIterations": 100,
+    "benchmarkIterations": 1000,
+    "todosToAdd": 100
+  },
+  "results": [
+    {
+      "name": "Statemanjs",
+      "operation": "Add Single Todo",
+      "avgTimeMs": 0.00714762600000023,
+      "minTimeMs": 0.003250000000008413,
+      "maxTimeMs": 0.2791250000000076,
+      "opsPerSecond": 139906.5927624036,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0023196510000004196,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Add Single Todo",
+      "avgTimeMs": 0.014362071999999913,
+      "minTimeMs": 0.007208000000005654,
+      "maxTimeMs": 1.7085829999999902,
+      "opsPerSecond": 69627.83642917304,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0023702560000001256,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Add Single Todo",
+      "avgTimeMs": 0.01737829799999996,
+      "minTimeMs": 0.010708000000008155,
+      "maxTimeMs": 0.12541699999999878,
+      "opsPerSecond": 57543.034421437726,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.005615796000000216,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Add Single Todo",
+      "avgTimeMs": 0.021143482999999946,
+      "minTimeMs": 0.013666999999998097,
+      "maxTimeMs": 1.2328339999999969,
+      "opsPerSecond": 47295.89727482471,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.005893072000000018,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Add 100 Todos",
+      "avgTimeMs": 0.04609276799999983,
+      "minTimeMs": 0.03562500000001023,
+      "maxTimeMs": 0.7209580000000244,
+      "opsPerSecond": 21695.377461384043,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.04164345900000001,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Add 100 Todos",
+      "avgTimeMs": 0.07353878899999922,
+      "minTimeMs": 0.04475000000002183,
+      "maxTimeMs": 2.6920410000000174,
+      "opsPerSecond": 13598.26580772238,
+      "subscriberCallCount": 100000,
+      "avgSubscriberLatencyMs": 0.031003275070000242,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Add 100 Todos",
+      "avgTimeMs": 0.8394751619999997,
+      "minTimeMs": 0.7050830000000587,
+      "maxTimeMs": 3.26233400000001,
+      "opsPerSecond": 1191.2204735367743,
+      "subscriberCallCount": 100000,
+      "avgSubscriberLatencyMs": 0.31796580385999995,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Add 100 Todos",
+      "avgTimeMs": 5.047101949999997,
+      "minTimeMs": 4.2066249999998035,
+      "maxTimeMs": 32.05320800000004,
+      "opsPerSecond": 198.13350510979882,
+      "subscriberCallCount": 100000,
+      "avgSubscriberLatencyMs": 1.760451725440014,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Complete Single Todo",
+      "avgTimeMs": 0.005396256999989419,
+      "minTimeMs": 0.003040999999939231,
+      "maxTimeMs": 0.3857909999996991,
+      "opsPerSecond": 185313.63498846715,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.002543299999992996,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Complete Single Todo",
+      "avgTimeMs": 0.008575910000005025,
+      "minTimeMs": 0.0046249999995779945,
+      "maxTimeMs": 0.8244580000000497,
+      "opsPerSecond": 116605.70131909198,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0017497779999876002,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Complete Single Todo",
+      "avgTimeMs": 0.010798164999997426,
+      "minTimeMs": 0.00779199999942648,
+      "maxTimeMs": 0.057625000000371074,
+      "opsPerSecond": 92608.32743343321,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.001308089000001928,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Complete Single Todo",
+      "avgTimeMs": 0.014933749999989232,
+      "minTimeMs": 0.01116699999965931,
+      "maxTimeMs": 0.08870899999965332,
+      "opsPerSecond": 66962.41734331437,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0048275859999967,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Toggle Single Todo",
+      "avgTimeMs": 0.004707676999998512,
+      "minTimeMs": 0.002749999999650754,
+      "maxTimeMs": 0.7060419999997976,
+      "opsPerSecond": 212418.9913624737,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.001895914000006087,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Toggle Single Todo",
+      "avgTimeMs": 0.005783493000002636,
+      "minTimeMs": 0.004125000000385626,
+      "maxTimeMs": 0.05537500000082218,
+      "opsPerSecond": 172905.88922638,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0009568620000054579,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Toggle Single Todo",
+      "avgTimeMs": 0.011091167000004135,
+      "minTimeMs": 0.007999999999810825,
+      "maxTimeMs": 0.72308300000077,
+      "opsPerSecond": 90161.83779395146,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.001094041000008474,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Toggle Single Todo",
+      "avgTimeMs": 0.014216900000003078,
+      "minTimeMs": 0.010957999999845924,
+      "maxTimeMs": 0.7661250000001019,
+      "opsPerSecond": 70338.82210606978,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0042702559999961524,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Delete Single Todo",
+      "avgTimeMs": 0.004272184000007655,
+      "minTimeMs": 0.002749999999650754,
+      "maxTimeMs": 0.028624999999919964,
+      "opsPerSecond": 234072.31523693926,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0012374190000027738,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Delete Single Todo",
+      "avgTimeMs": 0.0067422100000067075,
+      "minTimeMs": 0.003917000000001281,
+      "maxTimeMs": 0.7715840000000753,
+      "opsPerSecond": 148319.31962946945,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0006632679999993343,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Delete Single Todo",
+      "avgTimeMs": 0.01257202800000141,
+      "minTimeMs": 0.009833000000071479,
+      "maxTimeMs": 0.11320900000009715,
+      "opsPerSecond": 79541.6618543872,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0012174449999783974,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Delete Single Todo",
+      "avgTimeMs": 0.017985669000003326,
+      "minTimeMs": 0.013167000000066764,
+      "maxTimeMs": 0.9420829999999114,
+      "opsPerSecond": 55599.82228071778,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.006912385999982689,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Change Filter",
+      "avgTimeMs": 0.003253062999976464,
+      "minTimeMs": 0.002292000000124972,
+      "maxTimeMs": 0.01729099999920436,
+      "opsPerSecond": 307402.59257420927,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0006702379999996992,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Change Filter",
+      "avgTimeMs": 0.006680957999974453,
+      "minTimeMs": 0.0040829999998095445,
+      "maxTimeMs": 0.7907500000001164,
+      "opsPerSecond": 149679.13284349698,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0013743750000166984,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Change Filter",
+      "avgTimeMs": 0.01363226699999359,
+      "minTimeMs": 0.00908400000025722,
+      "maxTimeMs": 1.0490840000002208,
+      "opsPerSecond": 73355.37075384968,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.001875051999995776,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Change Filter",
+      "avgTimeMs": 0.011086079999995491,
+      "minTimeMs": 0.00858299999981682,
+      "maxTimeMs": 0.06825000000026193,
+      "opsPerSecond": 90203.20979105389,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0016876649999830989,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Batch: Add + Complete + Delete",
+      "avgTimeMs": 0.007834930999998505,
+      "minTimeMs": 0.004750000000058208,
+      "maxTimeMs": 1.084416999999121,
+      "opsPerSecond": 127633.5426566221,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0030839490000080334,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Batch: Add + Complete + Delete",
+      "avgTimeMs": 0.011111628000004202,
+      "minTimeMs": 0.007332999999562162,
+      "maxTimeMs": 0.8243329999995694,
+      "opsPerSecond": 89995.81339472685,
+      "subscriberCallCount": 4000,
+      "avgSubscriberLatencyMs": 0.0015942754999837235,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Batch: Add + Complete + Delete",
+      "avgTimeMs": 0.014228374999988773,
+      "minTimeMs": 0.00929199999973207,
+      "maxTimeMs": 0.7145840000002863,
+      "opsPerSecond": 70282.09475788972,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.006489114999999402,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Batch: Add + Complete + Delete",
+      "avgTimeMs": 0.017219801000003827,
+      "minTimeMs": 0.012499999999818101,
+      "maxTimeMs": 0.09816700000010314,
+      "opsPerSecond": 58072.680398558485,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.00789379500000723,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Update with 10 Subscribers",
+      "avgTimeMs": 0.008742456999977548,
+      "minTimeMs": 0.004708000000391621,
+      "maxTimeMs": 0.9647500000000946,
+      "opsPerSecond": 114384.32010618619,
+      "subscriberCallCount": 10000,
+      "avgSubscriberLatencyMs": 0.001753838799999903,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Update with 10 Subscribers",
+      "avgTimeMs": 0.011589359000000514,
+      "minTimeMs": 0.00708299999951123,
+      "maxTimeMs": 0.8527500000000146,
+      "opsPerSecond": 86286.04912488737,
+      "subscriberCallCount": 10000,
+      "avgSubscriberLatencyMs": 0.0017620926000126928,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Update with 10 Subscribers",
+      "avgTimeMs": 0.02898418900001161,
+      "minTimeMs": 0.020125000000007276,
+      "maxTimeMs": 1.1017080000001442,
+      "opsPerSecond": 34501.569114098704,
+      "subscriberCallCount": 10000,
+      "avgSubscriberLatencyMs": 0.003955873200005408,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Update with 10 Subscribers",
+      "avgTimeMs": 0.018431922000006123,
+      "minTimeMs": 0.013165999999728228,
+      "maxTimeMs": 0.8135000000002037,
+      "opsPerSecond": 54253.701811437124,
+      "subscriberCallCount": 10000,
+      "avgSubscriberLatencyMs": 0.005063528100013718,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Deep State Modification",
+      "avgTimeMs": 0.006940879000013411,
+      "minTimeMs": 0.0052080000004934845,
+      "maxTimeMs": 0.09254199999941193,
+      "opsPerSecond": 144073.97103422604,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.002303922999994029,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Effector",
+      "operation": "Deep State Modification",
+      "avgTimeMs": 0.010182865000007951,
+      "minTimeMs": 0.006457999999838648,
+      "maxTimeMs": 0.7625420000003942,
+      "opsPerSecond": 98204.1890960176,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0017467500000093424,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "MobX",
+      "operation": "Deep State Modification",
+      "avgTimeMs": 0.12160908999998356,
+      "minTimeMs": 0.0929999999998472,
+      "maxTimeMs": 1.1454169999997248,
+      "opsPerSecond": 8223.069509032057,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.0049861040000050705,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Redux",
+      "operation": "Deep State Modification",
+      "avgTimeMs": 0.11614595099999588,
+      "minTimeMs": 0.09850000000005821,
+      "maxTimeMs": 1.0195830000002388,
+      "opsPerSecond": 8609.856748256643,
+      "subscriberCallCount": 1000,
+      "avgSubscriberLatencyMs": 0.03255894799999987,
+      "stateValidationPassed": true
+    }
+  ],
+  "grouped": [
+    {
+      "operation": "Add Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Add Single Todo",
+          "avgTimeMs": 0.00714762600000023,
+          "minTimeMs": 0.003250000000008413,
+          "maxTimeMs": 0.2791250000000076,
+          "opsPerSecond": 139906.5927624036,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0023196510000004196,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Add Single Todo",
+          "avgTimeMs": 0.014362071999999913,
+          "minTimeMs": 0.007208000000005654,
+          "maxTimeMs": 1.7085829999999902,
+          "opsPerSecond": 69627.83642917304,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0023702560000001256,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Add Single Todo",
+          "avgTimeMs": 0.01737829799999996,
+          "minTimeMs": 0.010708000000008155,
+          "maxTimeMs": 0.12541699999999878,
+          "opsPerSecond": 57543.034421437726,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.005615796000000216,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Add Single Todo",
+          "avgTimeMs": 0.021143482999999946,
+          "minTimeMs": 0.013666999999998097,
+          "maxTimeMs": 1.2328339999999969,
+          "opsPerSecond": 47295.89727482471,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.005893072000000018,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Add 100 Todos",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Add 100 Todos",
+          "avgTimeMs": 0.04609276799999983,
+          "minTimeMs": 0.03562500000001023,
+          "maxTimeMs": 0.7209580000000244,
+          "opsPerSecond": 21695.377461384043,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.04164345900000001,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Add 100 Todos",
+          "avgTimeMs": 0.07353878899999922,
+          "minTimeMs": 0.04475000000002183,
+          "maxTimeMs": 2.6920410000000174,
+          "opsPerSecond": 13598.26580772238,
+          "subscriberCallCount": 100000,
+          "avgSubscriberLatencyMs": 0.031003275070000242,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Add 100 Todos",
+          "avgTimeMs": 0.8394751619999997,
+          "minTimeMs": 0.7050830000000587,
+          "maxTimeMs": 3.26233400000001,
+          "opsPerSecond": 1191.2204735367743,
+          "subscriberCallCount": 100000,
+          "avgSubscriberLatencyMs": 0.31796580385999995,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Add 100 Todos",
+          "avgTimeMs": 5.047101949999997,
+          "minTimeMs": 4.2066249999998035,
+          "maxTimeMs": 32.05320800000004,
+          "opsPerSecond": 198.13350510979882,
+          "subscriberCallCount": 100000,
+          "avgSubscriberLatencyMs": 1.760451725440014,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Complete Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Complete Single Todo",
+          "avgTimeMs": 0.005396256999989419,
+          "minTimeMs": 0.003040999999939231,
+          "maxTimeMs": 0.3857909999996991,
+          "opsPerSecond": 185313.63498846715,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.002543299999992996,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Complete Single Todo",
+          "avgTimeMs": 0.008575910000005025,
+          "minTimeMs": 0.0046249999995779945,
+          "maxTimeMs": 0.8244580000000497,
+          "opsPerSecond": 116605.70131909198,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0017497779999876002,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Complete Single Todo",
+          "avgTimeMs": 0.010798164999997426,
+          "minTimeMs": 0.00779199999942648,
+          "maxTimeMs": 0.057625000000371074,
+          "opsPerSecond": 92608.32743343321,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.001308089000001928,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Complete Single Todo",
+          "avgTimeMs": 0.014933749999989232,
+          "minTimeMs": 0.01116699999965931,
+          "maxTimeMs": 0.08870899999965332,
+          "opsPerSecond": 66962.41734331437,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0048275859999967,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Toggle Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Toggle Single Todo",
+          "avgTimeMs": 0.004707676999998512,
+          "minTimeMs": 0.002749999999650754,
+          "maxTimeMs": 0.7060419999997976,
+          "opsPerSecond": 212418.9913624737,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.001895914000006087,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Toggle Single Todo",
+          "avgTimeMs": 0.005783493000002636,
+          "minTimeMs": 0.004125000000385626,
+          "maxTimeMs": 0.05537500000082218,
+          "opsPerSecond": 172905.88922638,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0009568620000054579,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Toggle Single Todo",
+          "avgTimeMs": 0.011091167000004135,
+          "minTimeMs": 0.007999999999810825,
+          "maxTimeMs": 0.72308300000077,
+          "opsPerSecond": 90161.83779395146,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.001094041000008474,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Toggle Single Todo",
+          "avgTimeMs": 0.014216900000003078,
+          "minTimeMs": 0.010957999999845924,
+          "maxTimeMs": 0.7661250000001019,
+          "opsPerSecond": 70338.82210606978,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0042702559999961524,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Delete Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Delete Single Todo",
+          "avgTimeMs": 0.004272184000007655,
+          "minTimeMs": 0.002749999999650754,
+          "maxTimeMs": 0.028624999999919964,
+          "opsPerSecond": 234072.31523693926,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0012374190000027738,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Delete Single Todo",
+          "avgTimeMs": 0.0067422100000067075,
+          "minTimeMs": 0.003917000000001281,
+          "maxTimeMs": 0.7715840000000753,
+          "opsPerSecond": 148319.31962946945,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0006632679999993343,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Delete Single Todo",
+          "avgTimeMs": 0.01257202800000141,
+          "minTimeMs": 0.009833000000071479,
+          "maxTimeMs": 0.11320900000009715,
+          "opsPerSecond": 79541.6618543872,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0012174449999783974,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Delete Single Todo",
+          "avgTimeMs": 0.017985669000003326,
+          "minTimeMs": 0.013167000000066764,
+          "maxTimeMs": 0.9420829999999114,
+          "opsPerSecond": 55599.82228071778,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.006912385999982689,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Change Filter",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Change Filter",
+          "avgTimeMs": 0.003253062999976464,
+          "minTimeMs": 0.002292000000124972,
+          "maxTimeMs": 0.01729099999920436,
+          "opsPerSecond": 307402.59257420927,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0006702379999996992,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Change Filter",
+          "avgTimeMs": 0.006680957999974453,
+          "minTimeMs": 0.0040829999998095445,
+          "maxTimeMs": 0.7907500000001164,
+          "opsPerSecond": 149679.13284349698,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0013743750000166984,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Change Filter",
+          "avgTimeMs": 0.01363226699999359,
+          "minTimeMs": 0.00908400000025722,
+          "maxTimeMs": 1.0490840000002208,
+          "opsPerSecond": 73355.37075384968,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.001875051999995776,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Change Filter",
+          "avgTimeMs": 0.011086079999995491,
+          "minTimeMs": 0.00858299999981682,
+          "maxTimeMs": 0.06825000000026193,
+          "opsPerSecond": 90203.20979105389,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0016876649999830989,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Batch: Add + Complete + Delete",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Batch: Add + Complete + Delete",
+          "avgTimeMs": 0.007834930999998505,
+          "minTimeMs": 0.004750000000058208,
+          "maxTimeMs": 1.084416999999121,
+          "opsPerSecond": 127633.5426566221,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0030839490000080334,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Batch: Add + Complete + Delete",
+          "avgTimeMs": 0.011111628000004202,
+          "minTimeMs": 0.007332999999562162,
+          "maxTimeMs": 0.8243329999995694,
+          "opsPerSecond": 89995.81339472685,
+          "subscriberCallCount": 4000,
+          "avgSubscriberLatencyMs": 0.0015942754999837235,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Batch: Add + Complete + Delete",
+          "avgTimeMs": 0.014228374999988773,
+          "minTimeMs": 0.00929199999973207,
+          "maxTimeMs": 0.7145840000002863,
+          "opsPerSecond": 70282.09475788972,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.006489114999999402,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Batch: Add + Complete + Delete",
+          "avgTimeMs": 0.017219801000003827,
+          "minTimeMs": 0.012499999999818101,
+          "maxTimeMs": 0.09816700000010314,
+          "opsPerSecond": 58072.680398558485,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.00789379500000723,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Update with 10 Subscribers",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Update with 10 Subscribers",
+          "avgTimeMs": 0.008742456999977548,
+          "minTimeMs": 0.004708000000391621,
+          "maxTimeMs": 0.9647500000000946,
+          "opsPerSecond": 114384.32010618619,
+          "subscriberCallCount": 10000,
+          "avgSubscriberLatencyMs": 0.001753838799999903,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Update with 10 Subscribers",
+          "avgTimeMs": 0.011589359000000514,
+          "minTimeMs": 0.00708299999951123,
+          "maxTimeMs": 0.8527500000000146,
+          "opsPerSecond": 86286.04912488737,
+          "subscriberCallCount": 10000,
+          "avgSubscriberLatencyMs": 0.0017620926000126928,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Update with 10 Subscribers",
+          "avgTimeMs": 0.02898418900001161,
+          "minTimeMs": 0.020125000000007276,
+          "maxTimeMs": 1.1017080000001442,
+          "opsPerSecond": 34501.569114098704,
+          "subscriberCallCount": 10000,
+          "avgSubscriberLatencyMs": 0.003955873200005408,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Update with 10 Subscribers",
+          "avgTimeMs": 0.018431922000006123,
+          "minTimeMs": 0.013165999999728228,
+          "maxTimeMs": 0.8135000000002037,
+          "opsPerSecond": 54253.701811437124,
+          "subscriberCallCount": 10000,
+          "avgSubscriberLatencyMs": 0.005063528100013718,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Deep State Modification",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Deep State Modification",
+          "avgTimeMs": 0.006940879000013411,
+          "minTimeMs": 0.0052080000004934845,
+          "maxTimeMs": 0.09254199999941193,
+          "opsPerSecond": 144073.97103422604,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.002303922999994029,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Effector",
+          "operation": "Deep State Modification",
+          "avgTimeMs": 0.010182865000007951,
+          "minTimeMs": 0.006457999999838648,
+          "maxTimeMs": 0.7625420000003942,
+          "opsPerSecond": 98204.1890960176,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0017467500000093424,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "MobX",
+          "operation": "Deep State Modification",
+          "avgTimeMs": 0.12160908999998356,
+          "minTimeMs": 0.0929999999998472,
+          "maxTimeMs": 1.1454169999997248,
+          "opsPerSecond": 8223.069509032057,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.0049861040000050705,
+          "stateValidationPassed": true
+        },
+        {
+          "name": "Redux",
+          "operation": "Deep State Modification",
+          "avgTimeMs": 0.11614595099999588,
+          "minTimeMs": 0.09850000000005821,
+          "maxTimeMs": 1.0195830000002388,
+          "opsPerSecond": 8609.856748256643,
+          "subscriberCallCount": 1000,
+          "avgSubscriberLatencyMs": 0.03255894799999987,
+          "stateValidationPassed": true
+        }
+      ]
+    }
+  ]
+}

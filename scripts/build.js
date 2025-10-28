@@ -1,5 +1,5 @@
 const { execSync } = require("child_process");
-const getModuleNames = require("./getModuleNames");
+const getModuleNames = require("./getModuleNames.js");
 
 const providedModuleName = process.argv[2];
 
@@ -18,7 +18,7 @@ function build(moduleName) {
 
 getModuleNames()
     .then((existedModuleNames) => {
-if (existedModuleNames.includes(providedModuleName)) {
+        if (existedModuleNames.includes(providedModuleName)) {
             if (providedModuleName === "statemanjs") {
                 console.log(
                     `Testing "statemanjs" module before building ${providedModuleName} ...`,

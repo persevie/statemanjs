@@ -14,4 +14,12 @@ function getErrorMessage(error: unknown): string {
     return (error as Error).message;
 }
 
-export { formatError, getErrorMessage };
+function deepClone<T>(obj: T): T {
+    if (typeof structuredClone !== "undefined") {
+        return structuredClone(obj);
+    }
+    // Fallback for older environments
+    return JSON.parse(JSON.stringify(obj));
+}
+
+export { formatError, getErrorMessage, deepClone };

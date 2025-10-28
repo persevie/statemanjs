@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable react-hooks/rules-of-hooks */
 import { mount } from "@vue/test-utils";
 import { useStatemanjs } from "../index";
@@ -71,4 +70,19 @@ test("it should only rerender if the state value is 2", async () => {
 
     await wrapper.find("button").trigger("click");
     expect(wrapper.find("p").text()).toBe("Count: 2");
+});
+
+test("it should work outside of Vue component scope", () => {
+    const countState = createState(42);
+
+    // Calling useStatemanjs outside of setup() - getCurrentScope() will return undefined
+    const state = useStatemanjs(countState);
+
+    expect(state.value).toBe(42);
+
+    // Update state
+    countState.set(100);
+
+    // State ref should still have initial value since no subscription was created
+    expect(state.value).toBe(42);
 });

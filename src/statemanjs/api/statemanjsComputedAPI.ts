@@ -2,7 +2,7 @@ import {
     SubscriptionCb,
     SubscriptionOptions,
     UnsubscribeCb,
-} from "../entities";
+} from "../shared/entities";
 
 export interface StatemanjsComputedAPI<T> {
     /** Get current state */

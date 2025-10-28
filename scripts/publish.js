@@ -1,7 +1,7 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
-const getModuleNames = require("./getModuleNames");
-const directoryExists = require("./directoryExists");
+const getModuleNames = require("./getModuleNames.js");
+const directoryExists = require("./directoryExists.js");
 
 const providedModuleName = process.argv[2];
 

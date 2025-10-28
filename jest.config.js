@@ -1,6 +1,4 @@
-import type { Config } from "@jest/types";
-
-const config: Config.InitialOptions = {
+const config = {
     verbose: true,
     transform: {
         "^.+\\.ts?$": "ts-jest",
@@ -33,4 +31,5 @@ const config: Config.InitialOptions = {
     },
     coverageReporters: ["lcov", "text"],
 };
-export default config;
+
+module.exports = config;

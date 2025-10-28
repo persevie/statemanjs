@@ -1,0 +1,255 @@
+{
+  "timestamp": "2025-10-28T13:34:52.173Z",
+  "config": {
+    "warmupIterations": 10,
+    "benchmarkIterations": 10,
+    "todosToAdd": 1000000
+  },
+  "results": [
+    {
+      "name": "Statemanjs",
+      "operation": "Add Single Todo",
+      "avgTimeMs": 0.024891499999999667,
+      "minTimeMs": 0.020124999999993065,
+      "maxTimeMs": 0.04670799999999531,
+      "opsPerSecond": 40174.35670811375,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.009441700000000709,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Add 1000000 Todos",
+      "avgTimeMs": 506.8094999000001,
+      "minTimeMs": 440.86983299999974,
+      "maxTimeMs": 583.7762499999999,
+      "opsPerSecond": 1.9731279705635205,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 495.5574084,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Complete Single Todo",
+      "avgTimeMs": 0.01491249999999127,
+      "minTimeMs": 0.010041999999884865,
+      "maxTimeMs": 0.03404199999931734,
+      "opsPerSecond": 67057.8373847836,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.007558300000164308,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Toggle Single Todo",
+      "avgTimeMs": 0.012600000000202272,
+      "minTimeMs": 0.007749999998850399,
+      "maxTimeMs": 0.02320800000052259,
+      "opsPerSecond": 79365.07936380529,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.005828999999903317,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Delete Single Todo",
+      "avgTimeMs": 0.009987499999988358,
+      "minTimeMs": 0.008458000000246102,
+      "maxTimeMs": 0.01299999999901047,
+      "opsPerSecond": 100125.15644567365,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.0038497999999890452,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Change Filter",
+      "avgTimeMs": 0.007158300000628515,
+      "minTimeMs": 0.004875000000538421,
+      "maxTimeMs": 0.010500000000320142,
+      "opsPerSecond": 139697.97297014622,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.0016956999998001265,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Batch: Add + Complete + Delete",
+      "avgTimeMs": 0.0166957999996157,
+      "minTimeMs": 0.01449999999931606,
+      "maxTimeMs": 0.021166999998968095,
+      "opsPerSecond": 59895.30301171658,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.00962099999997008,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Update with 10 Subscribers",
+      "avgTimeMs": 0.019616799999494106,
+      "minTimeMs": 0.011999999998806743,
+      "maxTimeMs": 0.06862499999988358,
+      "opsPerSecond": 50976.71383843383,
+      "subscriberCallCount": 100,
+      "avgSubscriberLatencyMs": 0.004553309999901103,
+      "stateValidationPassed": true
+    },
+    {
+      "name": "Statemanjs",
+      "operation": "Deep State Modification",
+      "avgTimeMs": 0.03916669999998703,
+      "minTimeMs": 0.015124999999898137,
+      "maxTimeMs": 0.19499999999970896,
+      "opsPerSecond": 25531.893164354697,
+      "subscriberCallCount": 10,
+      "avgSubscriberLatencyMs": 0.00677510000004986,
+      "stateValidationPassed": true
+    }
+  ],
+  "grouped": [
+    {
+      "operation": "Add Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Add Single Todo",
+          "avgTimeMs": 0.024891499999999667,
+          "minTimeMs": 0.020124999999993065,
+          "maxTimeMs": 0.04670799999999531,
+          "opsPerSecond": 40174.35670811375,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.009441700000000709,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Add 1000000 Todos",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Add 1000000 Todos",
+          "avgTimeMs": 506.8094999000001,
+          "minTimeMs": 440.86983299999974,
+          "maxTimeMs": 583.7762499999999,
+          "opsPerSecond": 1.9731279705635205,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 495.5574084,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Complete Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Complete Single Todo",
+          "avgTimeMs": 0.01491249999999127,
+          "minTimeMs": 0.010041999999884865,
+          "maxTimeMs": 0.03404199999931734,
+          "opsPerSecond": 67057.8373847836,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.007558300000164308,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Toggle Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Toggle Single Todo",
+          "avgTimeMs": 0.012600000000202272,
+          "minTimeMs": 0.007749999998850399,
+          "maxTimeMs": 0.02320800000052259,
+          "opsPerSecond": 79365.07936380529,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.005828999999903317,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Delete Single Todo",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Delete Single Todo",
+          "avgTimeMs": 0.009987499999988358,
+          "minTimeMs": 0.008458000000246102,
+          "maxTimeMs": 0.01299999999901047,
+          "opsPerSecond": 100125.15644567365,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.0038497999999890452,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Change Filter",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Change Filter",
+          "avgTimeMs": 0.007158300000628515,
+          "minTimeMs": 0.004875000000538421,
+          "maxTimeMs": 0.010500000000320142,
+          "opsPerSecond": 139697.97297014622,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.0016956999998001265,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Batch: Add + Complete + Delete",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Batch: Add + Complete + Delete",
+          "avgTimeMs": 0.0166957999996157,
+          "minTimeMs": 0.01449999999931606,
+          "maxTimeMs": 0.021166999998968095,
+          "opsPerSecond": 59895.30301171658,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.00962099999997008,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Update with 10 Subscribers",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Update with 10 Subscribers",
+          "avgTimeMs": 0.019616799999494106,
+          "minTimeMs": 0.011999999998806743,
+          "maxTimeMs": 0.06862499999988358,
+          "opsPerSecond": 50976.71383843383,
+          "subscriberCallCount": 100,
+          "avgSubscriberLatencyMs": 0.004553309999901103,
+          "stateValidationPassed": true
+        }
+      ]
+    },
+    {
+      "operation": "Deep State Modification",
+      "libraries": [
+        {
+          "name": "Statemanjs",
+          "operation": "Deep State Modification",
+          "avgTimeMs": 0.03916669999998703,
+          "minTimeMs": 0.015124999999898137,
+          "maxTimeMs": 0.19499999999970896,
+          "opsPerSecond": 25531.893164354697,
+          "subscriberCallCount": 10,
+          "avgSubscriberLatencyMs": 0.00677510000004986,
+          "stateValidationPassed": true
+        }
+      ]
+    }
+  ]
+}

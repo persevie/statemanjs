@@ -1,6 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { DebugAPI } from "./api/debugAPI";
+import { DebugAPI } from "../api/debugAPI";
 
 /** Wrapper for the ability to save entities other than an object or array. */
 export type StatemanjsStateWrapper<T> = {
@@ -55,6 +53,7 @@ export type StatemanjsServiceOptions<T> = {
     debugService?: DebugAPI<T>;
     customComparator?: CustomComparator<T>;
     defaultComparator?: DefaultComparator;
+    batch?: boolean;
 };
 
 export type StatemanjsComputedServiceOptions<T> = StatemanjsServiceOptions<T> &
@@ -65,6 +64,7 @@ type BaseModifyOptions<T> = {
     comparatorOverride?: DefaultComparator;
     customComparatorOverride?: CustomComparator<T>;
     afterUpdate: () => void;
+    skipGenerationIncrement?: boolean; // For computed states to prevent generation interference
 };
 
 export type BaseSetOptions<T> = BaseModifyOptions<T>;
