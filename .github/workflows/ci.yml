@@ -1,60 +1,60 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - "**"
-  pull_request:
-    branches:
-      - "**"
+    push:
+        branches:
+            - "**"
+    pull_request:
+        branches:
+            - "**"
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [lts/*, current]
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [lts/*, current]
 
-    steps:
-      - uses: actions/checkout@v3
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
-        with:
-          node-version: ${{ matrix.node-version }}
-      - run: npm ci
-      - run: npm run test:all
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - run: npm run test:all
 
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v2
-        with:
-          name: code-coverage
-          path: |
-            src/statemanjs/coverage/lcov.info
-            src/statemanjs-react/coverage/lcov.info
+            - name: Archive code coverage results
+              uses: actions/upload-artifact@v4
+              with:
+                  name: code-coverage
+                  path: |
+                      src/statemanjs/coverage/lcov.info
+                      src/statemanjs-react/coverage/lcov.info
 
-  codecov:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
+    codecov:
+        needs: test
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
 
-      - name: Download code coverage results
-        uses: actions/download-artifact@v2
-        with:
-          name: code-coverage
+            - name: Download code coverage results
+              uses: actions/download-artifact@v4
+              with:
+                  name: code-coverage
 
-      - name: Upload coverage reports to Codecov - statemanjs
-        uses: codecov/codecov-action@v3
-        with:
-          files: statemanjs/coverage/lcov.info
-          flags: statemanjs
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+            - name: Upload coverage reports to Codecov - statemanjs
+              uses: codecov/codecov-action@v3
+              with:
+                  files: statemanjs/coverage/lcov.info
+                  flags: statemanjs
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: Upload coverage reports to Codecov - statemanjs-react
-        uses: codecov/codecov-action@v3
-        with:
-          files: statemanjs-react/coverage/lcov.info
-          flags: statemanjs-react
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+            - name: Upload coverage reports to Codecov - statemanjs-react
+              uses: codecov/codecov-action@v3
+              with:
+                  files: statemanjs-react/coverage/lcov.info
+                  flags: statemanjs-react
+              env:
+                  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
