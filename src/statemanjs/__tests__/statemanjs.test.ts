@@ -51,6 +51,223 @@ describe("Statemanjs API", () => {
         expect(planetState).toHaveProperty("update");
     });
 
+    test("it should work with primitive state (number)", () => {
+        const counterState = createState<number>(0);
+
+        let notifyCount = 0;
+        counterState.subscribe(() => {
+            notifyCount++;
+        });
+
+        counterState.set(1);
+        expect(counterState.get()).toBe(1);
+        expect(notifyCount).toBe(1);
+
+        counterState.set(1); // Same value
+        expect(notifyCount).toBe(1); // Should not notify
+
+        counterState.set(2, { skipComparison: true });
+        expect(notifyCount).toBe(2); // Should notify even with same value
+    });
+
+    test("it should work with primitive state (string)", () => {
+        const messageState = createState<string>("Hello");
+
+        expect(messageState.get()).toBe("Hello");
+
+        messageState.set("World");
+        expect(messageState.get()).toBe("World");
+    });
+
+    test("it should work with primitive state (boolean)", () => {
+        const flagState = createState<boolean>(false);
+
+        let notifyCount = 0;
+        flagState.subscribe(() => {
+            notifyCount++;
+        });
+
+        flagState.set(true);
+        expect(flagState.get()).toBe(true);
+        expect(notifyCount).toBe(1);
+    });
+
+    test("it should throw error when using update on primitive state", () => {
+        const numberState = createState<number>(42);
+
+        expect(() => {
+            numberState.update((s) => {
+                // This should throw
+                return s;
+            });
+        }).toThrow("Cannot use 'update' method on primitive state");
+    });
+
+    test("it should work with batch option enabled", () => {
+        const planetState = createState<Planet>(
+            {
+                name: "Earth",
+                system: "Solar system",
+                moons: [{ name: "Moon" }],
+            },
+            { batch: true },
+        );
+
+        let notifyCount = 0;
+        planetState.subscribe(() => {
+            notifyCount++;
+        });
+
+        // Multiple synchronous updates
+        planetState.set({
+            name: "Mars",
+            system: "Solar system",
+            moons: [{ name: "Phobos" }],
+        });
+
+        planetState.set({
+            name: "Jupiter",
+            system: "Solar system",
+            moons: [{ name: "Io" }],
+        });
+
+        // Should only notify once after microtask
+        expect(notifyCount).toBe(0);
+
+        return new Promise<void>((resolve) => {
+            queueMicrotask(() => {
+                expect(notifyCount).toBe(1);
+                resolve();
+            });
+        });
+    });
+
+    test("it should unsubscribe by id", () => {
+        const planetState = createState<Planet>({
+            name: "Earth",
+            system: "Solar system",
+            moons: [{ name: "Moon" }],
+        });
+
+        let count1 = 0;
+        let count2 = 0;
+
+        const unsub1 = planetState.subscribe(() => {
+            count1++;
+        });
+
+        planetState.subscribe(() => {
+            count2++;
+        });
+
+        expect(planetState.getActiveSubscribersCount()).toBe(2);
+
+        unsub1();
+        expect(planetState.getActiveSubscribersCount()).toBe(1);
+
+        planetState.set({
+            name: "Mars",
+            system: "Solar system",
+            moons: [{ name: "Phobos" }],
+        });
+
+        expect(count1).toBe(0);
+        expect(count2).toBe(1);
+    });
+
+    test("it should skip generation increment when specified", () => {
+        const planetState = createState<Planet>({
+            name: "Earth",
+            system: "Solar system",
+            moons: [{ name: "Moon" }],
+        });
+
+        let notifyCount = 0;
+        planetState.subscribe(() => {
+            notifyCount++;
+        });
+
+        planetState.set(
+            {
+                name: "Mars",
+                system: "Solar system",
+                moons: [{ name: "Phobos" }],
+            },
+            { skipGenerationIncrement: true },
+        );
+
+        expect(notifyCount).toBe(1);
+    });
+
+    test("it should use shallow comparator correctly", () => {
+        type SimpleState = {
+            count: number;
+            name: string;
+        };
+
+        const state = createState<SimpleState>(
+            { count: 0, name: "test" },
+            { defaultComparator: "shallow" },
+        );
+
+        let notifyCount = 0;
+        state.subscribe(() => {
+            notifyCount++;
+        });
+
+        // Same values - should not notify
+        const result = state.set({ count: 0, name: "test" });
+        expect(result).toBe(false);
+        expect(notifyCount).toBe(0);
+
+        // Different value - should notify
+        state.set({ count: 1, name: "test" });
+        expect(notifyCount).toBe(1);
+    });
+
+    test("it should return false when update does not change state", () => {
+        const planetState = createState<Planet>({
+            name: "Earth",
+            system: "Solar system",
+            moons: [{ name: "Moon" }],
+        });
+
+        const result = planetState.update((s) => {
+            // Do nothing
+        });
+
+        expect(result).toBe(false);
+    });
+
+    test("it should handle customComparatorOverride option", () => {
+        const planetState = createState<Planet>({
+            name: "Earth",
+            system: "Solar system",
+            moons: [{ name: "Moon" }],
+        });
+
+        let notifyCount = 0;
+        planetState.subscribe(() => {
+            notifyCount++;
+        });
+
+        // Custom comparator that always returns false (always different)
+        planetState.set(
+            {
+                name: "Earth",
+                system: "Solar system",
+                moons: [{ name: "Moon" }],
+            },
+            {
+                customComparatorOverride: () => false,
+                comparatorOverride: "custom",
+            },
+        );
+
+        // Should notify because comparator returns false
+        expect(notifyCount).toBe(1);
+    });
+
     test("it should return value (get method)", () => {
         const planetState = createState<Planet>({
             name: "Earth",
@@ -154,15 +371,12 @@ describe("Statemanjs API", () => {
     });
 
     test("it should return count of subscribers (getActiveSubscribersCount method)", () => {
-        let isTheMoonGettingCloser = false;
-        isTheMoonGettingCloser;
-
         const apogee = 405400;
         const moonObserverState = createState<MoonObserver>({
             distance: apogee,
         });
         moonObserverState.subscribe((s) => {
-            isTheMoonGettingCloser = s.distance < apogee;
+            const _isTheMoonGettingCloser = s.distance < apogee;
         }, {});
 
         moonObserverState.update((s) => {
@@ -218,11 +432,6 @@ describe("Statemanjs API", () => {
     });
 
     test("it should delete all unprotected subscribers (unsubscribeAll method)", () => {
-        let isTheMoonInPerigee = false;
-        let isTheMoonInApogee = true;
-        isTheMoonInPerigee;
-        isTheMoonInApogee;
-
         const apogee = 405400;
         const perigee = 362600;
         const moonObserverState = createState<MoonObserver>({
@@ -231,23 +440,20 @@ describe("Statemanjs API", () => {
 
         moonObserverState.subscribe(
             () => {
-                isTheMoonInPerigee = true;
+                // Protected subscriber
             },
             { notifyCondition: (s) => s.distance === perigee, protect: true },
         );
 
         moonObserverState.subscribe(
             () => {
-                isTheMoonInApogee = true;
+                // Unprotected subscriber
             },
             { notifyCondition: (s) => s.distance === apogee, protect: false },
         );
 
-        moonObserverState.subscribe((s) => {
-            if (s.distance !== apogee && s.distance !== perigee) {
-                isTheMoonInApogee = false;
-                isTheMoonInPerigee = false;
-            }
+        moonObserverState.subscribe(() => {
+            // Unprotected subscriber
         }, {});
 
         moonObserverState.unsubscribeAll();
@@ -1101,6 +1307,109 @@ describe("Statemanjs computed API", () => {
         expect(statusComputedState.get()).toEqual(
             "Houston, everything is fine",
         );
+    });
+
+    test("it should handle unsubscribeAll on computed state", () => {
+        const counterState = createState<number>(0);
+
+        const doubleState = createComputedState<number>(
+            () => counterState.get() * 2,
+            [counterState],
+        );
+
+        let count1 = 0;
+        let count2 = 0;
+
+        doubleState.subscribe(() => {
+            count1++;
+        });
+
+        doubleState.subscribe(
+            () => {
+                count2++;
+            },
+            { protect: true },
+        );
+
+        expect(doubleState.getActiveSubscribersCount()).toBe(2);
+
+        doubleState.unsubscribeAll();
+
+        expect(doubleState.getActiveSubscribersCount()).toBe(1);
+
+        counterState.set(5);
+
+        expect(count1).toBe(0);
+        expect(count2).toBe(1);
+    });
+
+    test("it should handle lazy evaluation of computed state", () => {
+        const counterState = createState<number>(0);
+
+        let computeCount = 0;
+        const doubleState = createComputedState<number>(() => {
+            computeCount++;
+            return counterState.get() * 2;
+        }, [counterState]);
+
+        // No computation yet
+        expect(computeCount).toBe(0);
+
+        // First get triggers computation
+        expect(doubleState.get()).toBe(0);
+        expect(computeCount).toBe(1);
+
+        // Change without subscribers - marks as dirty but doesn't recompute immediately
+        counterState.set(5);
+
+        // Next get recomputes
+        expect(doubleState.get()).toBe(10);
+        expect(computeCount).toBe(2);
+    });
+
+    test("it should recompute computed state on dependency change", () => {
+        const counterState = createState<number>(5);
+
+        const squaredState = createComputedState<number>(() => {
+            const val = counterState.get();
+            return val * val;
+        }, [counterState]);
+
+        expect(squaredState.get()).toBe(25);
+
+        counterState.set(10);
+        expect(squaredState.get()).toBe(100);
+    });
+
+    test("it should handle multiple subscribers on computed state", () => {
+        const counterState = createState<number>(0);
+
+        const doubleState = createComputedState<number>(
+            () => counterState.get() * 2,
+            [counterState],
+        );
+
+        let count1 = 0;
+        let count2 = 0;
+
+        const unsub1 = doubleState.subscribe(() => {
+            count1++;
+        });
+
+        doubleState.subscribe(() => {
+            count2++;
+        });
+
+        counterState.set(5);
+        expect(count1).toBe(1);
+        expect(count2).toBe(1);
+
+        unsub1();
+        expect(doubleState.getActiveSubscribersCount()).toBe(1);
+
+        counterState.set(10);
+        expect(count1).toBe(1);
+        expect(count2).toBe(2);
     });
 });
 
