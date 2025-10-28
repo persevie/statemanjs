@@ -13,7 +13,7 @@ jobs:
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [lts/*, current]
+                node-version: [lts/*]
 
         steps:
             - uses: actions/checkout@v4
@@ -32,7 +32,7 @@ jobs:
             - name: Archive code coverage results
               uses: actions/upload-artifact@v4
               with:
-                  name: code-coverage
+                  name: code-coverage-${{ matrix.node-version }}
                   path: |
                       src/statemanjs/coverage/lcov.info
                       src/statemanjs-react/coverage/lcov.info
@@ -46,7 +46,8 @@ jobs:
             - name: Download code coverage results
               uses: actions/download-artifact@v4
               with:
-                  name: code-coverage
+                  pattern: code-coverage-*
+                  merge-multiple: true
 
             - name: Upload coverage reports to Codecov - statemanjs
               uses: codecov/codecov-action@v3
